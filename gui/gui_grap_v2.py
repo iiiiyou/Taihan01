@@ -12,6 +12,7 @@ import numpy as np
 from PIL import Image, ImageTk 
 import traceback
 import sys
+sys.path.append('C:/source')
 
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
