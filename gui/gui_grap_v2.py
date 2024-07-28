@@ -90,36 +90,139 @@ label_widgets[2].place(x=667, y=47)
 
 ######  tkinter  end   ######
 
+
+######  Get m53, m54 Start   ######
+global m53, m54
+m53, m54 = False, False
+m53m, m54m = m53, m54
+getm = 0
+def get_m():
+    #############################
+    global getm, m53, m54
+    getm = getm + 1
+    if getm <= 200:
+        m53, m54 = False, False
+        print(i, ": 컴퓨터 키고 변화 Start 버튼 실행 안함")
+    if getm > 200 and getm <= 300:
+        m53, m54 = True, False
+        print(i, ": 컴퓨터 키고 변화 Start 버튼 처음 실행 함")
+    if getm > 300 and getm <= 400:
+        m53, m54 = False, True
+        print(i, ": 컴퓨터 키고 변화 Start 버튼 두번째 실행 함")
+    if getm > 400 and getm <= 500:
+        m53, m54 = True, False
+        print(i, ": 컴퓨터 키고 변화 Start 버튼 세번째 실행 함")
+    if getm > 500:
+        getm = 0
+######  Get m53, m54 Start   ######
+
+######  Start button status check start   ######
+def check_start():
+    global m53, m54, m53m, m54m
+    get_m()
+
+    # 컴퓨터 키고, 광통신 start 버튼 안눌렀을때 -> m53, M54 = False, False
+    # 광통신 start 버튼 처음 누름              -> m53, M54 = True, False
+    # 광통신 start 버튼 두번째 누름            -> m53, M54 = False, True
+
+    # 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태이면
+    if m53 == False and m54 == False:
+        print("   ", i," :화면 전송만 실행")
+        show_camera()
+
+    # 방금 Start 버튼이 눌렸나?
+    elif not((m53m == m53) & (m54m == m54)):
+        print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
+        exposure_change()
+        print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
+        mask_area_base_set()
+        print("   ", i," :Detact 실행(Start 버튼 누른 후)")
+        detect_camera()
+        print()
+        m53m, m54m = m53, m54
+    # Start 버튼 눌른 후 다음 Start 버튼 누르기 전인가?
+    else:
+        print("   ", i," :Detact 실행")
+        detect_camera()
+        print()
+
+######  Start button status check end   ######
+
+def exposure_change():
+    grabResults, cams_bright_mean = [], []
+    for h in range (10):
+        h = h + 1
+        i = 0
+        for i in range(len(cameras)):
+            grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+            if grabResults[i].GrabSucceeded():
+
+                cams_bright_mean.append(np.mean(converter.Convert(grabResults[i]).GetArray()))
+                # print(np.mean(cams_bright_mean), cams_bright_mean)
+
+    # Set Camera Exposure Time Start
+    if (np.mean(cams_bright_mean) > 70):
+        cameras[i].ExposureTimeAbs.SetValue(150)
+    elif (np.mean(cams_bright_mean) < 35):
+        cameras[i].ExposureTimeAbs.SetValue(300)
+    # Set Camera Exposure Time End
+    
+    print('camera bright:', int(np.mean(cams_bright_mean)), ', len:', len(cams_bright_mean))
+
+
 mean_masks = []
 
-def open_camera():  
+def mask_area_base_set():
+    print('mask_area_base_set')
+
+
+def show_camera():  
     imgsize, confidence = 640, 0.50
-    grabResults, cams_bright_mean = [], []
+    grabResults = []
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
     masks = []
-
-    m53, m54 = 0, 0
-    # 컴퓨터 키고, 광통신 start 버튼 안눌렀을때 -> m53, M54 = (0, 0)  m53-m54 = 0
-    # 광통신 start 버튼 처음 누름  -> m53, M54 = (1, 0)  m53-m54 = 1
-    # 광통신 start 버튼 두번째 누름 -> m53, M54 = (0, 1) m53-m54 = -1
-    m4 = 0
-    # 컴퓨터 키고, 광통신 start 버튼 안눌렀을때(PLC Stop) -> m4 = 0
-    # 광통신 start 버튼 처음 누름  -> m4 = 1
-    # PLC 화면 stop 버튼 누르면 -> m4 = 0
 
     if cam_on:
         for i in range(len(cameras)):
             grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
             if grabResults[i].GrabSucceeded():
 
-                # Set Camera Exposure Time
-                cams_bright_mean.append(np.mean(converter.Convert(grabResults[i]).GetArray()))
-                print(np.mean(cams_bright_mean), cams_bright_mean)
-                if (np.mean(cams_bright_mean) > 70):
-                    cameras[i].ExposureTimeAbs.SetValue(150)
-                elif (np.mean(cams_bright_mean) < 35):
-                    cameras[i].ExposureTimeAbs.SetValue(300)
+                images.append(converter.Convert(grabResults[i]))
+                images[i] = images[i].GetArray()
+                images[i] = cv2.resize(images[i], (imgsize,imgsize))
+
+                # Visualize the results on the frame
+                annotated_imgs.append(cv2.resize(images[i], (330,330)))
+
+                ######  tkinter  start ######
+                # Capture the latest frame and transform to image
+                cap_imgs.append(Image.fromarray(annotated_imgs[i]))
+
+                # Convert captured image to photoimage 
+                photos.append(ImageTk.PhotoImage(image=cap_imgs[i]))
+
+                # Displaying photoimage in the label 
+                label_widgets[i].photo_image = photos[i]
+                
+                # Configure image in the label 
+                label_widgets[i].configure(image=photos[i])
+
+        # Repeat the same process after every 10 milliseconds
+        label_widgets[0].after(1, check_start)
+                ######  tkinter  end   ######
+
+def detect_camera():  
+    imgsize, confidence = 640, 0.50
+    grabResults = []
+    images, results, annotated_imgs = [], [], []
+    cap_imgs, photos = [], []
+    masks = []
+
+    if cam_on:
+        for i in range(len(cameras)):
+            grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+            if grabResults[i].GrabSucceeded():
 
                 images.append(converter.Convert(grabResults[i]))
                 images[i] = images[i].GetArray()
@@ -134,20 +237,6 @@ def open_camera():
                     for cls_id, custom_label in class_mapping.items():
                         if cls_id in result.names: # check if the class id is in the results
                             result.names[cls_id] = custom_label # replace the class name with the custom label
-
-                #--- mask area start ---#
-                # Segmentation
-                data = results[i][0].masks.data      # masks, (N, H, W)
-                xy = results[i][0].masks.xy        # x,y segments (pixels), List[segment] * N
-                xyn = results[i][0].masks.xyn       # x,y segments (normalized), List[segment] * N
-
-                # generate mask
-                mask = data[0]  # torch.unique(mask) = [0., 1.]
-                # Convert the tensor to a NumPy array
-                mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
-                mask_count = np.count_nonzero(mask == 0)
-                masks.append(mask_count)
-                #--- mask area end ---#
 
                 # Visualize the results on the frame
                 annotated_imgs.append(cv2.resize(results[i][0].plot(), (330,330)))
@@ -165,7 +254,18 @@ def open_camera():
                 # Configure image in the label 
                 label_widgets[i].configure(image=photos[i])
 
-        # Repeat the same process after every 10 milliseconds
+                #### mask area start ####
+                # Segmentation
+                data = results[i][0].masks.data      # masks, (N, H, W)
+
+                # generate mask
+                mask = data[0]  # torch.unique(mask) = [0., 1.]
+                # Convert the tensor to a NumPy array
+                mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
+                mask_count = np.count_nonzero(mask == 0)
+                masks.append(mask_count)
+                #### mask area end ####
+
         if len(mean_masks) >= 20:
             mean_masks.pop(0)
         mean_masks.append([date.get_time_in_all(), int(np.mean(masks))])
@@ -174,7 +274,9 @@ def open_camera():
             # 불량 감지 코드 추가
             # 외경 측정 코드 추가
         # 면적이상 이벤트 코드 끝 #
-        label_widgets[0].after(1, open_camera)
+        
+        # Repeat the same process after every 10 milliseconds
+        label_widgets[0].after(1, check_start)
 
                 ######  tkinter  end   ######
   
@@ -182,7 +284,8 @@ def start_cam():
     global cam_on
     # stop_cam()
     cam_on = True
-    open_camera()
+    # open_camera()
+    check_start()
 
 def stop_cam():
     global cam_on
