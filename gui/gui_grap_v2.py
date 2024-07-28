@@ -13,9 +13,16 @@ from PIL import Image, ImageTk
 import traceback
 import sys
 sys.path.append('C:/source')
+import util.format_date_time as date
 
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
+
+# Define a class mapping dictionary
+class_mapping = {
+    1: 'Detect', # The key is the class id, you may need to adjust according to your model
+    # Add more mappings as needed
+}
 
 tlf = pylon.TlFactory.GetInstance()
 devices = tlf.EnumerateDevices()
@@ -82,12 +89,25 @@ label_widgets.append(Label(root))
 label_widgets[2].place(x=667, y=47)
 
 ######  tkinter  end   ######
-  
+
+mean_masks = []
+
 def open_camera():  
     imgsize, confidence = 640, 0.50
     grabResults, cams_bright_mean = [], []
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
+    masks = []
+
+    m53, m54 = 0, 0
+    # 컴퓨터 키고, 광통신 start 버튼 안눌렀을때 -> m53, M54 = (0, 0)  m53-m54 = 0
+    # 광통신 start 버튼 처음 누름  -> m53, M54 = (1, 0)  m53-m54 = 1
+    # 광통신 start 버튼 두번째 누름 -> m53, M54 = (0, 1) m53-m54 = -1
+    m4 = 0
+    # 컴퓨터 키고, 광통신 start 버튼 안눌렀을때(PLC Stop) -> m4 = 0
+    # 광통신 start 버튼 처음 누름  -> m4 = 1
+    # PLC 화면 stop 버튼 누르면 -> m4 = 0
+
     if cam_on:
         for i in range(len(cameras)):
             grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
@@ -108,6 +128,27 @@ def open_camera():
                 # Run YOLOv8 inference on the frame
                 # results1 = model(img1)
                 results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
+
+                # Replace class names with custom labels in the results
+                for result in results[i]:
+                    for cls_id, custom_label in class_mapping.items():
+                        if cls_id in result.names: # check if the class id is in the results
+                            result.names[cls_id] = custom_label # replace the class name with the custom label
+
+                #--- mask area start ---#
+                # Segmentation
+                data = results[i][0].masks.data      # masks, (N, H, W)
+                xy = results[i][0].masks.xy        # x,y segments (pixels), List[segment] * N
+                xyn = results[i][0].masks.xyn       # x,y segments (normalized), List[segment] * N
+
+                # generate mask
+                mask = data[0]  # torch.unique(mask) = [0., 1.]
+                # Convert the tensor to a NumPy array
+                mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
+                mask_count = np.count_nonzero(mask == 0)
+                masks.append(mask_count)
+                #--- mask area end ---#
+
                 # Visualize the results on the frame
                 annotated_imgs.append(cv2.resize(results[i][0].plot(), (330,330)))
 
@@ -124,7 +165,15 @@ def open_camera():
                 # Configure image in the label 
                 label_widgets[i].configure(image=photos[i])
 
-        # Repeat the same process after every 10 milliseconds 
+        # Repeat the same process after every 10 milliseconds
+        if len(mean_masks) >= 20:
+            mean_masks.pop(0)
+        mean_masks.append([date.get_time_in_all(), int(np.mean(masks))])
+
+        # 면적이상 이벤트 코드 시작 #
+            # 불량 감지 코드 추가
+            # 외경 측정 코드 추가
+        # 면적이상 이벤트 코드 끝 #
         label_widgets[0].after(1, open_camera)
 
                 ######  tkinter  end   ######

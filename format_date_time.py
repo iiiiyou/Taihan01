@@ -15,10 +15,9 @@ def get_time_in_mmddss():
   now = datetime.datetime.now()
   return now.strftime("%H%M%S")
 
-def get_time_in_all():
+def get_date_in_all():
   """Returns the current time in mmddss format."""
-  now = datetime.datetime.now()
-  return now.strftime("%Y-%m-%d %H:%M:%S.%f")
+  return datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")
 
 if __name__ == "__main__":
     print(get_date_in_yyyymmdd())
