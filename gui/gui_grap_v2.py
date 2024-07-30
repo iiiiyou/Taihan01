@@ -14,6 +14,10 @@ import traceback
 import sys
 sys.path.append('C:/source')
 import util.format_date_time as date
+from pymodbus.client import ModbusTcpClient
+from pymodbus.transaction import *
+client = ModbusTcpClient('192.168.0.20' ,502)
+import time
 
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
@@ -91,35 +95,39 @@ label_widgets[2].place(x=667, y=47)
 ######  tkinter  end   ######
 
 
+
 ######  Get m53, m54 Start   ######
 global m53, m54
 m53, m54 = False, False
 m53m, m54m = m53, m54
 getm = 0
-def get_m():
-    #############################
-    global getm, m53, m54
-    getm = getm + 1
-    if getm <= 200:
-        m53, m54 = False, False
-        print(i, ": 컴퓨터 키고 변화 Start 버튼 실행 안함")
-    if getm > 200 and getm <= 300:
-        m53, m54 = True, False
-        print(i, ": 컴퓨터 키고 변화 Start 버튼 처음 실행 함")
-    if getm > 300 and getm <= 400:
-        m53, m54 = False, True
-        print(i, ": 컴퓨터 키고 변화 Start 버튼 두번째 실행 함")
-    if getm > 400 and getm <= 500:
-        m53, m54 = True, False
-        print(i, ": 컴퓨터 키고 변화 Start 버튼 세번째 실행 함")
-    if getm > 500:
-        getm = 0
-######  Get m53, m54 Start   ######
+# def get_m():
+#     #############################
+#     global getm, m53, m54
+#     getm = getm + 1
+#     if getm <= 200:
+#         m53, m54 = False, False
+#         print(i, ": 컴퓨터 키고 변화 Start 버튼 실행 안함")
+#     if getm > 200 and getm <= 300:
+#         m53, m54 = True, False
+#         print(i, ": 컴퓨터 키고 변화 Start 버튼 처음 실행 함")
+#     if getm > 300 and getm <= 400:
+#         m53, m54 = False, True
+#         print(i, ": 컴퓨터 키고 변화 Start 버튼 두번째 실행 함")
+#     if getm > 400 and getm <= 500:
+#         m53, m54 = True, False
+#         print(i, ": 컴퓨터 키고 변화 Start 버튼 세번째 실행 함")
+#     if getm > 500:
+#         getm = 0
+#####  Get m53, m54 Start   ######
 
 ######  Start button status check start   ######
 def check_start():
     global m53, m54, m53m, m54m
-    get_m()
+    result_m53=client.read_coils(0x53)
+    result_m54=client.read_coils(0x54)
+    m53, m54 = result_m53.bits[0], result_m54.bits[0]
+    # get_m()
 
     # 컴퓨터 키고, 광통신 start 버튼 안눌렀을때 -> m53, M54 = False, False
     # 광통신 start 버튼 처음 누름              -> m53, M54 = True, False
@@ -127,21 +135,36 @@ def check_start():
 
     # 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태이면
     if m53 == False and m54 == False:
+        result_m53=client.read_coils(0x53)
+        result_m54=client.read_coils(0x54)
+        m53, m54 = result_m53.bits[0], result_m54.bits[0]
+        m53m, m54m = m53, m54
         print("   ", i," :화면 전송만 실행")
+        print("m53: " + str(m53) + "m54: " + str(m54) + "m53m: " + str(m53m) + "m54m: " + str(m54m))
         show_camera()
 
     # 방금 Start 버튼이 눌렸나?
     elif not((m53m == m53) & (m54m == m54)):
+        result_m53=client.read_coils(0x53)
+        result_m54=client.read_coils(0x54)
+        m53, m54 = result_m53.bits[0], result_m54.bits[0]
+        m53m, m54m = m53, m54
         print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
         exposure_change()
         print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
         mask_area_base_set()
+        #여기서 SQL insert 하기
+        print("m53: " + str(m53) + "m54: " + str(m54) + "m53m: " + str(m53m) + "m54m: " + str(m54m))
         print("   ", i," :Detact 실행(Start 버튼 누른 후)")
         detect_camera()
         print()
-        m53m, m54m = m53, m54
+        time.sleep(5)
     # Start 버튼 눌른 후 다음 Start 버튼 누르기 전인가?
     else:
+        result_m53=client.read_coils(0x53)
+        result_m54=client.read_coils(0x54)
+        m53, m54 = result_m53.bits[0], result_m54.bits[0]
+        m53m, m54m = m53, m54
         print("   ", i," :Detact 실행")
         detect_camera()
         print()
