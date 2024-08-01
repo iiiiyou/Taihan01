@@ -11,9 +11,14 @@ import cv2
 import numpy as np
 from PIL import Image, ImageTk 
 import traceback
+import os
 import sys
 sys.path.append('C:/source')
 import util.format_date_time as date
+import SQL.insert_sqllite_start as start
+from pymodbus.client import ModbusTcpClient
+from pymodbus.transaction import *
+import time
 
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
@@ -90,36 +95,50 @@ label_widgets[2].place(x=667, y=47)
 
 ######  tkinter  end   ######
 
+# Make folders if not exsist #
+def makedirs(path):
+    try:
+        if not os.path.exists(path):
+            os.makedirs(path)
+    except OSError:
+        print("Error: Failed to create the directory.")
+# Make folder end #
+
 
 ######  Get m53, m54 Start   ######
 global m53, m54
 m53, m54 = False, False
 m53m, m54m = m53, m54
 getm = 0
-def get_m():
-    #############################
-    global getm, m53, m54
-    getm = getm + 1
-    if getm <= 200:
-        m53, m54 = False, False
-        print(i, ": 컴퓨터 키고 변화 Start 버튼 실행 안함")
-    if getm > 200 and getm <= 300:
-        m53, m54 = True, False
-        print(i, ": 컴퓨터 키고 변화 Start 버튼 처음 실행 함")
-    if getm > 300 and getm <= 400:
-        m53, m54 = False, True
-        print(i, ": 컴퓨터 키고 변화 Start 버튼 두번째 실행 함")
-    if getm > 400 and getm <= 500:
-        m53, m54 = True, False
-        print(i, ": 컴퓨터 키고 변화 Start 버튼 세번째 실행 함")
-    if getm > 500:
-        getm = 0
+# def get_m():
+#     #############################
+#     global getm, m53, m54
+#     getm = getm + 1
+#     if getm <= 200:
+#         m53, m54 = False, False
+#         print(i, ": 컴퓨터 키고 변화 Start 버튼 실행 안함")
+#     if getm > 200 and getm <= 300:
+#         m53, m54 = True, False
+#         print(i, ": 컴퓨터 키고 변화 Start 버튼 처음 실행 함")
+#     if getm > 300 and getm <= 400:
+#         m53, m54 = False, True
+#         print(i, ": 컴퓨터 키고 변화 Start 버튼 두번째 실행 함")
+#     if getm > 400 and getm <= 500:
+#         m53, m54 = True, False
+#         print(i, ": 컴퓨터 키고 변화 Start 버튼 세번째 실행 함")
+#     if getm > 500:
+#         getm = 0
 ######  Get m53, m54 Start   ######
 
+client = ModbusTcpClient('192.168.0.20' ,502)
 ######  Start button status check start   ######
 def check_start():
     global m53, m54, m53m, m54m
-    get_m()
+    result_m53 = client.read_coils(0x53)
+    result_m54 = client.read_coils(0x54)
+    m53, m54 = result_m53.bits[0], result_m54.bits[0]
+
+    # get_m()
 
     # 컴퓨터 키고, 광통신 start 버튼 안눌렀을때 -> m53, M54 = False, False
     # 광통신 start 버튼 처음 누름              -> m53, M54 = True, False
@@ -127,15 +146,47 @@ def check_start():
 
     # 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태이면
     if m53 == False and m54 == False:
+        if client.connected:
+            result_m53 = client.read_coils(0x53)
+            result_m54 = client.read_coils(0x54)
+            m53, m54 = result_m53.bits[0], result_m54.bits[0]
+        m53m, m54m = m53, m54
         print("   ", i," :화면 전송만 실행")
+        print(" m53: " + str(m53) + " m54: " + str(m54) + " m53m: " + str(m53m) + " m54m: " + str(m54m))
         show_camera()
 
     # 방금 Start 버튼이 눌렸나?
     elif not((m53m == m53) & (m54m == m54)):
+        # 면적 DB 보관할 폴더 있는지 확인 후 없으면 생성
+        path='C:/Users/user01/Desktop/areaDB'+date.format_date()+'/'
+        makedirs(path)
+
+        # 제품번호 material_number 가져오기
+        result_n0_1_2  = client.read_holding_registers(0x0000)    # D0  0x0000 제품번호
+        result_n0_3_4  = client.read_holding_registers(0x0001)
+        result_n0_5    = client.read_holding_registers(0x0002)
+
+        ad=(result_n0_1_2.registers[0])
+        bd=(result_n0_3_4.registers[0])
+        cd=(result_n0_5.registers[0])
+        c1 = (ad & 0x00ff)
+        c2 = ad >> 8
+        c3 = (bd & 0x00ff)
+        c4 = bd >> 8
+        c5 = cd
+        s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)
+
+        # 시작 시간 가져오기
+        s_time = int(date.get_date_time())
+
+        #SQL insert (시작시간, 제품번호)
+        start.write_sql(s_time,s_n)
+
         print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
         exposure_change()
         print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
         mask_area_base_set()
+        time.sleep(5)
         print("   ", i," :Detact 실행(Start 버튼 누른 후)")
         detect_camera()
         print()
