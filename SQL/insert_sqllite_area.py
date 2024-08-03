@@ -1,13 +1,11 @@
 import sqlite3
+import sys
+sys.path.append('C:/source')
 import util.format_date_time as ti
-
-s_time=ti.get_date_time()
-product="abe"
-area="100"
 
 def write_sql(s_time, product, area):
     #테이블 생성 및 데이터 삽입
-    conn = sqlite3.connect('C:/Users/user01/Desktop/areaDB'+s_time+'.db')
+    conn = sqlite3.connect('C:/Users/user01/Desktop/areaDB/'+ti.get_date_in_yyyymm()+"/"+s_time+'.db')
     cursor = conn.cursor()
 
     c_time = ti.get_date_time()
@@ -22,5 +20,3 @@ def write_sql(s_time, product, area):
 
     conn.commit()
     conn.close()
-    
-write_sql(s_time, product, area)

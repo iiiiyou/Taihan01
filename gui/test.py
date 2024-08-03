@@ -16,6 +16,7 @@ import sys
 sys.path.append('C:/source')
 import util.format_date_time as date
 import SQL.insert_sqllite_start as start
+import SQL.insert_sqllite_detect as detect
 from pymodbus.client import ModbusTcpClient
 from pymodbus.transaction import *
 import time
@@ -106,9 +107,10 @@ def makedirs(path):
 
 
 ######  Get m53, m54 Start   ######
-global m53, m54
+global m53, m54, s_time, count
 m53, m54 = False, False
 m53m, m54m = m53, m54
+count = 0
 getm = 0
 # def get_m():
 #     #############################
@@ -133,7 +135,7 @@ getm = 0
 client = ModbusTcpClient('192.168.0.20' ,502)
 ######  Start button status check start   ######
 def check_start():
-    global m53, m54, m53m, m54m
+    global m53, m54, m53m, m54m, s_time, count
     result_m53 = client.read_coils(0x53)
     result_m54 = client.read_coils(0x54)
     m53, m54 = result_m53.bits[0], result_m54.bits[0]
@@ -157,36 +159,21 @@ def check_start():
 
     # 방금 Start 버튼이 눌렸나?
     elif not((m53m == m53) & (m54m == m54)):
+        count = 0
         # 면적 DB 보관할 폴더 있는지 확인 후 없으면 생성
-        path='C:/Users/user01/Desktop/areaDB'+date.format_date()+'/'
+        path='C:/Users/user01/Desktop/areaDB/'+date.get_date_in_yyyymm()+'/'
         makedirs(path)
-
-        # 제품번호 material_number 가져오기
-        result_n0_1_2  = client.read_holding_registers(0x0000)    # D0  0x0000 제품번호
-        result_n0_3_4  = client.read_holding_registers(0x0001)
-        result_n0_5    = client.read_holding_registers(0x0002)
-
-        ad=(result_n0_1_2.registers[0])
-        bd=(result_n0_3_4.registers[0])
-        cd=(result_n0_5.registers[0])
-        c1 = (ad & 0x00ff)
-        c2 = ad >> 8
-        c3 = (bd & 0x00ff)
-        c4 = bd >> 8
-        c5 = cd
-        s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)
 
         # 시작 시간 가져오기
         s_time = int(date.get_date_time())
 
-        #SQL insert (시작시간, 제품번호)
-        start.write_sql(s_time,s_n)
+        #SQL insert (시작시간)
+        start.write_sql1(s_time)
 
         print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
         exposure_change()
         print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
         mask_area_base_set()
-        time.sleep(5)
         print("   ", i," :Detact 실행(Start 버튼 누른 후)")
         detect_camera()
         print()
@@ -264,11 +251,16 @@ def show_camera():
                 ######  tkinter  end   ######
 
 def detect_camera():  
+    global s_time, count
     imgsize, confidence = 640, 0.50
     grabResults = []
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
     masks = []
+    path = 'C:/Users/user01/Desktop/image/'+date.get_date_in_yyyymmdd()+'/box/'
+    makedirs(path)
+    path = 'C:/Users/user01/Desktop/image/'+date.get_date_in_yyyymmdd()+'/Original/'
+    makedirs(path)
 
     if cam_on:
         for i in range(len(cameras)):
@@ -317,6 +309,61 @@ def detect_camera():
                     mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
                     mask_count = np.count_nonzero(mask == 0)
                     masks.append(mask_count)
+                #### mask area end ####
+
+                try:
+                    if int(results[i][0].boxes.cls[1]) == 1:
+                        cv2.imwrite('C:/Users/user01/Desktop/image/'+date.get_date_in_yyyymmdd()+'/box/'+date.get_time_in_mmddss()+'.jpg', annotated_imgs[i])
+                        cv2.imwrite('C:/Users/user01/Desktop/image/'+date.get_date_in_yyyymmdd()+'/Original/'+date.get_time_in_mmddss()+'_Original.jpg', images[i])
+                        count = count + 1
+                        # 제품번호 material_number 가져오기
+                        result_n0_1_2  = client.read_holding_registers(0x0000)    # D0  0x0000 제품번호
+                        result_n0_3_4  = client.read_holding_registers(0x0001)
+                        result_n0_5    = client.read_holding_registers(0x0002)
+
+                        ad=(result_n0_1_2.registers[0])
+                        bd=(result_n0_3_4.registers[0])
+                        cd=(result_n0_5.registers[0])
+                        c1 = (ad & 0x00ff)
+                        c2 = ad >> 8
+                        c3 = (bd & 0x00ff)
+                        c4 = bd >> 8
+                        c5 = cd
+                        s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)
+
+                        # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
+
+                        # 감지 시간 저장
+                        d_time = int(date.get_date_time())
+
+                        # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                        client.write_coils(0x0020,1)
+                        client.write_coils(0x0020,0)
+                        m_m = i + 1000
+                        ft_ft = i + 5000
+                        d1000_m  = client.read_holding_registers(m_m)
+                        d5000_ft = client.read_holding_registers(ft_ft)
+                        d_meter = d1000_m.registers[0]
+                        d_feet = d5000_ft.registers[0]
+                        
+                        # 오류 유형
+                        type = "detect"
+
+                        # 이미지 저장 위치
+                        path='C:/Users/user01/Desktop/image/'+date.get_date_in_yyyymmdd()+'/'
+                        makedirs(path)
+                        image = "C:/Users/user01/Desktop/image/"+date.get_date_in_yyyymmdd()+"/"+str(d_time)+".jpg"
+                        # area = 123
+                        area = int(mean_masks[len(mean_masks)-1][1])
+
+                        detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                except IndexError:
+                    continue
+                # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
+
+
+
+
                 #### mask area end ####
 
         if len(mean_masks) >= 20:
