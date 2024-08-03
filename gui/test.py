@@ -111,6 +111,7 @@ global m53, m54, s_time, count
 m53, m54 = False, False
 m53m, m54m = m53, m54
 count = 0
+s_time = 0
 getm = 0
 # def get_m():
 #     #############################
@@ -360,8 +361,6 @@ def detect_camera():
                 except IndexError:
                     continue
                 # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
-
-
 
 
                 #### mask area end ####
