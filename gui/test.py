@@ -17,6 +17,7 @@ sys.path.append('C:/source')
 import util.format_date_time as date
 import SQL.insert_sqllite_start as start
 import SQL.insert_sqllite_detect as detect
+import SQL.insert_sqllite_area as areadb
 from pymodbus.client import ModbusTcpClient
 from pymodbus.transaction import *
 import time
@@ -162,7 +163,7 @@ def check_start():
     elif not((m53m == m53) & (m54m == m54)):
         count = 0
         # 면적 DB 보관할 폴더 있는지 확인 후 없으면 생성
-        path='C:/Users/user01/Desktop/areaDB/'+date.get_date_in_yyyymm()+'/'
+        path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'
         makedirs(path)
 
         # 시작 시간 가져오기
@@ -258,10 +259,11 @@ def detect_camera():
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
     masks = []
-    path = 'C:/Users/user01/Desktop/image/'+date.get_date_in_yyyymmdd()+'/box/'
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/box/'
     makedirs(path)
-    path = 'C:/Users/user01/Desktop/image/'+date.get_date_in_yyyymmdd()+'/Original/'
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
     makedirs(path)
+    count_area = 0
 
     if cam_on:
         for i in range(len(cameras)):
@@ -314,8 +316,10 @@ def detect_camera():
 
                 try:
                     if int(results[i][0].boxes.cls[1]) == 1:
-                        cv2.imwrite('C:/Users/user01/Desktop/image/'+date.get_date_in_yyyymmdd()+'/box/'+date.get_time_in_mmddss()+'.jpg', annotated_imgs[i])
-                        cv2.imwrite('C:/Users/user01/Desktop/image/'+date.get_date_in_yyyymmdd()+'/Original/'+date.get_time_in_mmddss()+'_Original.jpg', images[i])
+                        detected_time = date.get_time_in_mmddss()
+                        detected_date = date.get_date_in_yyyymmdd()
+                        cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', annotated_imgs[i])
+                        cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'_Original.jpg', images[i])
                         count = count + 1
                         # 제품번호 material_number 가져오기
                         result_n0_1_2  = client.read_holding_registers(0x0000)    # D0  0x0000 제품번호
@@ -335,7 +339,7 @@ def detect_camera():
                         # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
 
                         # 감지 시간 저장
-                        d_time = int(date.get_date_time())
+                        d_time = int(detected_time)
 
                         # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
                         client.write_coils(0x0020,1)
@@ -351,9 +355,9 @@ def detect_camera():
                         type = "detect"
 
                         # 이미지 저장 위치
-                        path='C:/Users/user01/Desktop/image/'+date.get_date_in_yyyymmdd()+'/'
+                        path='C:/image/'+detected_date+'/'
                         makedirs(path)
-                        image = "C:/Users/user01/Desktop/image/"+date.get_date_in_yyyymmdd()+"/"+str(d_time)+".jpg"
+                        image = "C:/image/"+detected_date+"/"+str(d_time)+".jpg"
                         # area = 123
                         area = int(mean_masks[len(mean_masks)-1][1])
 
