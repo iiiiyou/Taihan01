@@ -263,7 +263,28 @@ def detect_camera():
     makedirs(path)
     path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
     makedirs(path)
-    count_area = 0
+    # 제품번호 material_number 가져오기
+    result_n0_1_2  = client.read_holding_registers(120)    # D120   제품번호
+    result_n0_3_4  = client.read_holding_registers(121)
+    result_n0_5_6  = client.read_holding_registers(122)
+    result_n0_7_8  = client.read_holding_registers(123)
+    result_n0_9_10  = client.read_holding_registers(124)
+    ad=(result_n0_1_2.registers[0])
+    bd=(result_n0_3_4.registers[0])
+    cd=(result_n0_5_6.registers[0])
+    dd=(result_n0_7_8.registers[0])
+    ed=(result_n0_9_10.registers[0])
+    c1 = (ad & 0x00ff)
+    c2 = ad >> 8
+    c3 = (bd & 0x00ff)
+    c4 = bd >> 8
+    c5 = (cd & 0x00ff)
+    c6 = cd >> 8
+    c7 = (dd & 0x00ff)
+    c8 = dd >> 8
+    c9  = (ed & 0x00ff)
+    c10 = ed >> 8
+    s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
 
     if cam_on:
         for i in range(len(cameras)):
@@ -321,20 +342,6 @@ def detect_camera():
                         cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', annotated_imgs[i])
                         cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'_Original.jpg', images[i])
                         count = count + 1
-                        # 제품번호 material_number 가져오기
-                        result_n0_1_2  = client.read_holding_registers(0x0000)    # D0  0x0000 제품번호
-                        result_n0_3_4  = client.read_holding_registers(0x0001)
-                        result_n0_5    = client.read_holding_registers(0x0002)
-
-                        ad=(result_n0_1_2.registers[0])
-                        bd=(result_n0_3_4.registers[0])
-                        cd=(result_n0_5.registers[0])
-                        c1 = (ad & 0x00ff)
-                        c2 = ad >> 8
-                        c3 = (bd & 0x00ff)
-                        c4 = bd >> 8
-                        c5 = cd
-                        s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)
 
                         # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
 
@@ -369,8 +376,11 @@ def detect_camera():
 
                 #### mask area end ####
 
-        if len(mean_masks) >= 20:
+        if len(mean_masks) >= 10:
+            areadb.write_sql(s_time, s_n, mean_masks[len(mean_masks)-1][1])
             mean_masks.pop(0)
+            mean_masks.clear()
+            print(len(mean_masks))
 
         # Mask Area에 값이 있으면 mean_masks에 append
         if len(masks) > 0:
