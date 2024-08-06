@@ -24,10 +24,12 @@ import time
 
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
+imgsize, confidence = 640, 0.50
 
+client = ModbusTcpClient('192.168.0.20' ,502)
 # Define a class mapping dictionary
 class_mapping = {
-    1: 'Detect', # The key is the class id, you may need to adjust according to your model
+    1: 'Defect', # The key is the class id, you may need to adjust according to your model
     # Add more mappings as needed
 }
 
@@ -106,6 +108,11 @@ def makedirs(path):
         print("Error: Failed to create the directory.")
 # Make folder end #
 
+#리셋버튼 수동 실행
+def resetbtn():
+    client.write_coils(0x53,0)
+    client.write_coils(0x54,0)
+    client.write_coils(0x01,0)
 
 ######  Get m53, m54 Start   ######
 global m53, m54, s_time, count
@@ -134,13 +141,14 @@ getm = 0
 #         getm = 0
 ######  Get m53, m54 Start   ######
 
-client = ModbusTcpClient('192.168.0.20' ,502)
 ######  Start button status check start   ######
 def check_start():
-    global m53, m54, m53m, m54m, s_time, count
+    global m53, m54, m53m, m54m, s_time, count    
     result_m53 = client.read_coils(0x53)
     result_m54 = client.read_coils(0x54)
     m53, m54 = result_m53.bits[0], result_m54.bits[0]
+    
+    # resetbtn()
 
     # get_m()
 
@@ -200,12 +208,14 @@ def exposure_change():
                 cams_bright_mean.append(np.mean(converter.Convert(grabResults[i]).GetArray()))
                 # print(np.mean(cams_bright_mean), cams_bright_mean)
 
-    # Set Camera Exposure Time Start
-    if (np.mean(cams_bright_mean) > 70):
-        cameras[i].ExposureTimeAbs.SetValue(150)
-    elif (np.mean(cams_bright_mean) < 35):
-        cameras[i].ExposureTimeAbs.SetValue(300)
-    # Set Camera Exposure Time End
+
+    for i in range(len(cameras)):
+        # Set Camera Exposure Time Start
+        if (np.mean(cams_bright_mean) > 70):
+            cameras[i].ExposureTimeAbs.SetValue(150)
+        elif (np.mean(cams_bright_mean) < 35):
+            cameras[i].ExposureTimeAbs.SetValue(300)
+        # Set Camera Exposure Time End
     
     print('camera bright:', int(np.mean(cams_bright_mean)), ', len:', len(cams_bright_mean))
 
@@ -214,14 +224,46 @@ mean_masks = []
 
 def mask_area_base_set():
     print('mask_area_base_set')
+    grabResults = []
+    images, results = [], []
+    masks = []
+    for i in range(len(cameras)):
+        grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+        if grabResults[i].GrabSucceeded():
+
+            images.append(converter.Convert(grabResults[i]))
+            images[i] = images[i].GetArray()
+            images[i] = cv2.resize(images[i], (imgsize,imgsize))
+
+            # Run YOLOv8 inference on the frame
+            # results1 = model(img1)
+            results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
+
+            # Replace class names with custom labels in the results
+            for result in results[i]:
+                for cls_id, custom_label in class_mapping.items():
+                    if cls_id in result.names: # check if the class id is in the results
+                        result.names[cls_id] = custom_label # replace the class name with the custom label
+
+            #### mask area start ####
+            # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
+            if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[0]) == 0):
+                # Segmentation
+                data = results[i][0].masks.data      # masks, (N, H, W)
+
+                # generate mask
+                mask = data[0]  # torch.unique(mask) = [0., 1.]
+                # Convert the tensor to a NumPy array
+                mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
+                mask_count = np.count_nonzero(mask == 0)
+                masks.append(mask_count)
+            #### mask area end ####
 
 
-def show_camera():  
-    imgsize, confidence = 640, 0.50
+def show_camera():
     grabResults = []
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
-    masks = []
 
     if cam_on:
         for i in range(len(cameras)):
@@ -254,7 +296,6 @@ def show_camera():
 
 def detect_camera():  
     global s_time, count
-    imgsize, confidence = 640, 0.50
     grabResults = []
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
@@ -339,7 +380,7 @@ def detect_camera():
                     if int(results[i][0].boxes.cls[1]) == 1:
                         detected_time = date.get_time_in_mmddss()
                         detected_date = date.get_date_in_yyyymmdd()
-                        cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', annotated_imgs[i])
+                        cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
                         cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'_Original.jpg', images[i])
                         count = count + 1
 
@@ -366,7 +407,7 @@ def detect_camera():
                         makedirs(path)
                         image = "C:/image/"+detected_date+"/"+str(d_time)+".jpg"
                         # area = 123
-                        area = int(mean_masks[len(mean_masks)-1][1])
+                        area = int(mean_masks[len(mean_masks)-1])
 
                         detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
                 except IndexError:
@@ -377,14 +418,15 @@ def detect_camera():
                 #### mask area end ####
 
         if len(mean_masks) >= 10:
-            areadb.write_sql(s_time, s_n, mean_masks[len(mean_masks)-1][1])
-            mean_masks.pop(0)
+            areadb.write_sql(s_time, s_n, int(np.mean(mean_masks)))
+            # mean_masks.pop(0)
             mean_masks.clear()
             print(len(mean_masks))
 
         # Mask Area에 값이 있으면 mean_masks에 append
         if len(masks) > 0:
-            mean_masks.append([date.get_time_in_all(), int(np.mean(masks))])
+            # mean_masks.append([date.get_time_in_all(), int(np.mean(masks))])
+            mean_masks.append(int(np.mean(masks)))
 
         # 면적이상 이벤트 코드 시작 #
             # 불량 감지 코드 추가

@@ -14,7 +14,11 @@ result_m51=client.read_coils(0x51)
 result_m53=client.read_coils(0x53)           
 result_m54=client.read_coils(0x54)
 
-print('M1 M50 M51 M53 M54',result_m1.bits[0],result_m50.bits[0],result_m51.bits[0],result_m53.bits[0],result_m54.bits[0])  
+# print('M1 M50 M51 M53 M54',result_m1.bits[0],result_m50.bits[0],result_m51.bits[0],result_m53.bits[0],result_m54.bits[0])  
+# print(result_m1.bits[0])        
+
+
+print('M1 M53 M54',result_m1.bits[0],result_m53.bits[0],result_m54.bits[0])  
 print(result_m1.bits[0])        
 
 
