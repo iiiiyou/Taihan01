@@ -25,6 +25,7 @@ import time
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
 imgsize, confidence = 640, 0.50
+cable_area_base = []
 
 client = ModbusTcpClient('192.168.0.20' ,502)
 # Define a class mapping dictionary
@@ -115,11 +116,11 @@ def resetbtn():
     client.write_coils(0x01,0)
 
 ######  Get m53, m54 Start   ######
-global m53, m54, s_time, count
-m53, m54 = False, False
+m0, m53, m54, s_time, count = False, False, False, 0, 0
+# m53, m54 = False, False
 m53m, m54m = m53, m54
-count = 0
-s_time = 0
+# count = 0
+# s_time = 0
 getm = 0
 # def get_m():
 #     #############################
@@ -143,10 +144,12 @@ getm = 0
 
 ######  Start button status check start   ######
 def check_start():
-    global m53, m54, m53m, m54m, s_time, count    
+    global m0, m53, m54, m53m, m54m, s_time, count
     result_m53 = client.read_coils(0x53)
     result_m54 = client.read_coils(0x54)
+    result_m0 = client.read_coils(0x01)
     m53, m54 = result_m53.bits[0], result_m54.bits[0]
+    m0 = result_m0.bits[0]
     
     # resetbtn()
 
@@ -224,40 +227,56 @@ mean_masks = []
 
 def mask_area_base_set():
     print('mask_area_base_set')
-    grabResults = []
-    images, results = [], []
     masks = []
-    for i in range(len(cameras)):
-        grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-        if grabResults[i].GrabSucceeded():
+    # Exposure Time 설정 후
+    # 카메라 10번 실행해서 Cable의 area 기준 값 설정
+    for h in range (10):
+        h = h + 1
+        grabResults = []
+        images, results = [], []
+        for i in range(len(cameras)):
+            grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+            if grabResults[i].GrabSucceeded():
 
-            images.append(converter.Convert(grabResults[i]))
-            images[i] = images[i].GetArray()
-            images[i] = cv2.resize(images[i], (imgsize,imgsize))
+                images.append(converter.Convert(grabResults[i]))
+                images[i] = images[i].GetArray()
+                images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
-            # Run YOLOv8 inference on the frame
-            # results1 = model(img1)
-            results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
+                # Run YOLOv8 inference on the frame
+                # results1 = model(img1)
+                results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
 
-            # Replace class names with custom labels in the results
-            for result in results[i]:
-                for cls_id, custom_label in class_mapping.items():
-                    if cls_id in result.names: # check if the class id is in the results
-                        result.names[cls_id] = custom_label # replace the class name with the custom label
+                # Replace class names with custom labels in the results
+                for result in results[i]:
+                    for cls_id, custom_label in class_mapping.items():
+                        if cls_id in result.names: # check if the class id is in the results
+                            result.names[cls_id] = custom_label # replace the class name with the custom label
 
-            #### mask area start ####
-            # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
-            if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[0]) == 0):
-                # Segmentation
-                data = results[i][0].masks.data      # masks, (N, H, W)
+                #### mask area start ####
+                # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
+                if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[0]) == 0):
+                    # Segmentation
+                    data = results[i][0].masks.data      # masks, (N, H, W)
 
-                # generate mask
-                mask = data[0]  # torch.unique(mask) = [0., 1.]
-                # Convert the tensor to a NumPy array
-                mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
-                mask_count = np.count_nonzero(mask == 0)
-                masks.append(mask_count)
-            #### mask area end ####
+                    # generate mask
+                    mask = data[0]  # torch.unique(mask) = [0., 1.]
+                    # Convert the tensor to a NumPy array
+                    mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
+                    mask_count = np.count_nonzero(mask == 255)
+                    masks.append(mask_count)
+                #### mask area end ####
+    print(len(masks))
+
+    # 케이블 기준 area 값 설정
+    global cable_area_base
+    cable_area_base = int(np.mean(masks))
+    print('cable_area_base = ', cable_area_base)
+    print('cable_area_base = ', cable_area_base)
+
+    # 케이블 기준 area 값 DB저장 시작
+    # insert 'cable_area_base'
+    # 케이블 기준 area 값 DB저장 끝
+
 
 
 def show_camera():
