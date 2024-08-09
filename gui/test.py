@@ -132,7 +132,8 @@ label_cable_current_area_value = tk.Label(root, text="측정 전")
 label_cable_current_area_value.place(x=120, y=420)
 
 def show_current_mask_area(current_mask_area):
-    label_cable_current_area_value = tk.Label(root, text=current_mask_area)
+    text_cma = current_mask_area, round(cable_area_base/current_mask_area*100, 2)
+    label_cable_current_area_value = tk.Label(root, text=text_cma)
     # Grid the labels in a 2x2 grid
     label_cable_current_area_value.place(x=120, y=420)
 # 현재 케이블 면척 출력 끝
