@@ -144,7 +144,9 @@ getm = 0
 
 ######  Start button status check start   ######
 def check_start():
-    global m0, m53, m54, m53m, m54m, s_time, count
+    global m0, m53, m54, m53m, m54m, s_time, count, client
+    if not(client.connected):
+        client = ModbusTcpClient('192.168.0.20' ,502)
     result_m53 = client.read_coils(0x53)
     result_m54 = client.read_coils(0x54)
     result_m0 = client.read_coils(0x01)
@@ -161,10 +163,11 @@ def check_start():
 
     # 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태이면
     if m53 == False and m54 == False:
-        if client.connected:
-            result_m53 = client.read_coils(0x53)
-            result_m54 = client.read_coils(0x54)
-            m53, m54 = result_m53.bits[0], result_m54.bits[0]
+        if not(client.connected):
+            client = ModbusTcpClient('192.168.0.20' ,502)
+        result_m53 = client.read_coils(0x53)
+        result_m54 = client.read_coils(0x54)
+        m53, m54 = result_m53.bits[0], result_m54.bits[0]
         m53m, m54m = m53, m54
         print("   ", i," :화면 전송만 실행")
         print(" m53: " + str(m53) + " m54: " + str(m54) + " m53m: " + str(m53m) + " m54m: " + str(m54m))
@@ -236,35 +239,41 @@ def mask_area_base_set():
         images, results = [], []
         for i in range(len(cameras)):
             grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-            if grabResults[i].GrabSucceeded():
+            try:
+                if grabResults[i].GrabSucceeded():
 
-                images.append(converter.Convert(grabResults[i]))
-                images[i] = images[i].GetArray()
-                images[i] = cv2.resize(images[i], (imgsize,imgsize))
+                    images.append(converter.Convert(grabResults[i]))
+                    images[i] = images[i].GetArray()
+                    images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
-                # Run YOLOv8 inference on the frame
-                # results1 = model(img1)
-                results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
+                    # Run YOLOv8 inference on the frame
+                    # results1 = model(img1)
+                    results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
 
-                # Replace class names with custom labels in the results
-                for result in results[i]:
-                    for cls_id, custom_label in class_mapping.items():
-                        if cls_id in result.names: # check if the class id is in the results
-                            result.names[cls_id] = custom_label # replace the class name with the custom label
+                    # Replace class names with custom labels in the results
+                    for result in results[i]:
+                        for cls_id, custom_label in class_mapping.items():
+                            if cls_id in result.names: # check if the class id is in the results
+                                result.names[cls_id] = custom_label # replace the class name with the custom label
 
-                #### mask area start ####
-                # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
-                if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[0]) == 0):
-                    # Segmentation
-                    data = results[i][0].masks.data      # masks, (N, H, W)
+                    #### mask area start ####
+                    # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
+                    if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[0]) == 0):
+                        # Segmentation
+                        data = results[i][0].masks.data      # masks, (N, H, W)
 
-                    # generate mask
-                    mask = data[0]  # torch.unique(mask) = [0., 1.]
-                    # Convert the tensor to a NumPy array
-                    mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
-                    mask_count = np.count_nonzero(mask == 255)
-                    masks.append(mask_count)
-                #### mask area end ####
+                        # generate mask
+                        mask = data[0]  # torch.unique(mask) = [0., 1.]
+                        # Convert the tensor to a NumPy array
+                        mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
+                        mask_count = np.count_nonzero(mask == 255)
+                        masks.append(mask_count)
+                    #### mask area end ####
+            except Exception as e:
+                print(f"===========ERROR==========: {e}")
+                traceback.print_exc(file=sys.stdout)
+                continue
+
     print(len(masks))
 
     # 케이블 기준 area 값 설정
@@ -287,31 +296,42 @@ def show_camera():
     if cam_on:
         for i in range(len(cameras)):
             grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-            if grabResults[i].GrabSucceeded():
+            try: 
+                print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
+                if grabResults[i].GrabSucceeded():
 
-                images.append(converter.Convert(grabResults[i]))
-                images[i] = images[i].GetArray()
-                images[i] = cv2.resize(images[i], (imgsize,imgsize))
+                    print('성공한 i 번째 카메라:', i)
+                    print('before append len(images) = ', len(images))
+                    images.append(converter.Convert(grabResults[i]))
 
-                # Visualize the results on the frame
-                annotated_imgs.append(cv2.resize(images[i], (330,330)))
+                    print('after append len(images) = ', len(images))
+                    images[i] = images[i].GetArray()
+                    images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
-                ######  tkinter  start ######
-                # Capture the latest frame and transform to image
-                cap_imgs.append(Image.fromarray(annotated_imgs[i]))
+                    # Visualize the results on the frame
+                    annotated_imgs.append(cv2.resize(images[i], (330,330)))
 
-                # Convert captured image to photoimage 
-                photos.append(ImageTk.PhotoImage(image=cap_imgs[i]))
+                    ######  tkinter  start ######
+                    # Capture the latest frame and transform to image
+                    cap_imgs.append(Image.fromarray(annotated_imgs[i]))
 
-                # Displaying photoimage in the label 
-                label_widgets[i].photo_image = photos[i]
+                    # Convert captured image to photoimage 
+                    photos.append(ImageTk.PhotoImage(image=cap_imgs[i]))
+
+                    # Displaying photoimage in the label 
+                    label_widgets[i].photo_image = photos[i]
+                    
+                    # Configure image in the label 
+                    label_widgets[i].configure(image=photos[i])
+            except Exception as e:
+                print(f"===========ERROR==========: {e}")
+                traceback.print_exc(file=sys.stdout)
+                continue
                 
-                # Configure image in the label 
-                label_widgets[i].configure(image=photos[i])
-
         # Repeat the same process after every 10 milliseconds
         label_widgets[0].after(1, check_start)
-                ######  tkinter  end   ######
+                ######  tkinter  end   ###### 
+
 
 def detect_camera():  
     global s_time, count
@@ -349,53 +369,53 @@ def detect_camera():
     if cam_on:
         for i in range(len(cameras)):
             grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-            if grabResults[i].GrabSucceeded():
+            try:
+                if grabResults[i].GrabSucceeded():
 
-                images.append(converter.Convert(grabResults[i]))
-                images[i] = images[i].GetArray()
-                images[i] = cv2.resize(images[i], (imgsize,imgsize))
+                    images.append(converter.Convert(grabResults[i]))
+                    images[i] = images[i].GetArray()
+                    images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
-                # Run YOLOv8 inference on the frame
-                # results1 = model(img1)
-                results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
+                    # Run YOLOv8 inference on the frame
+                    # results1 = model(img1)
+                    results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
 
-                # Replace class names with custom labels in the results
-                for result in results[i]:
-                    for cls_id, custom_label in class_mapping.items():
-                        if cls_id in result.names: # check if the class id is in the results
-                            result.names[cls_id] = custom_label # replace the class name with the custom label
+                    # Replace class names with custom labels in the results
+                    for result in results[i]:
+                        for cls_id, custom_label in class_mapping.items():
+                            if cls_id in result.names: # check if the class id is in the results
+                                result.names[cls_id] = custom_label # replace the class name with the custom label
 
-                # Visualize the results on the frame
-                annotated_imgs.append(cv2.resize(results[i][0].plot(), (330,330)))
+                    # Visualize the results on the frame
+                    annotated_imgs.append(cv2.resize(results[i][0].plot(), (330,330)))
 
-                ######  tkinter  start ######
-                # Capture the latest frame and transform to image
-                cap_imgs.append(Image.fromarray(annotated_imgs[i]))
+                    ######  tkinter  start ######
+                    # Capture the latest frame and transform to image
+                    cap_imgs.append(Image.fromarray(annotated_imgs[i]))
 
-                # Convert captured image to photoimage 
-                photos.append(ImageTk.PhotoImage(image=cap_imgs[i]))
+                    # Convert captured image to photoimage 
+                    photos.append(ImageTk.PhotoImage(image=cap_imgs[i]))
 
-                # Displaying photoimage in the label 
-                label_widgets[i].photo_image = photos[i]
-                
-                # Configure image in the label 
-                label_widgets[i].configure(image=photos[i])
-                
-                #### mask area start ####
-                # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
-                if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[0]) == 0):
-                    # Segmentation
-                    data = results[i][0].masks.data      # masks, (N, H, W)
+                    # Displaying photoimage in the label 
+                    label_widgets[i].photo_image = photos[i]
+                    
+                    # Configure image in the label 
+                    label_widgets[i].configure(image=photos[i])
+                    
+                    #### mask area start ####
+                    # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
+                    if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[0]) == 0):
+                        # Segmentation
+                        data = results[i][0].masks.data      # masks, (N, H, W)
 
-                    # generate mask
-                    mask = data[0]  # torch.unique(mask) = [0., 1.]
-                    # Convert the tensor to a NumPy array
-                    mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
-                    mask_count = np.count_nonzero(mask == 0)
-                    masks.append(mask_count)
-                #### mask area end ####
+                        # generate mask
+                        mask = data[0]  # torch.unique(mask) = [0., 1.]
+                        # Convert the tensor to a NumPy array
+                        mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
+                        mask_count = np.count_nonzero(mask == 0)
+                        masks.append(mask_count)
+                    #### mask area end ####
 
-                try:
                     if int(results[i][0].boxes.cls[1]) == 1:
                         detected_time = date.get_time_in_mmddss()
                         detected_date = date.get_date_in_yyyymmdd()
@@ -429,12 +449,16 @@ def detect_camera():
                         area = int(mean_masks[len(mean_masks)-1])
 
                         detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
-                except IndexError:
-                    continue
-                # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
+
+                    # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
 
 
-                #### mask area end ####
+                    #### mask area end ####
+            except Exception as e:
+                # print(f"===========ERROR==========: {e}")
+                # traceback.print_exc(file=sys.stdout)
+                continue
+
 
         if len(mean_masks) >= 10:
             areadb.write_sql(s_time, s_n, int(np.mean(mean_masks)))
