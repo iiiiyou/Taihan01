@@ -28,3 +28,17 @@ def write_sql2(s_time, product):
 
     conn.commit()
     conn.close()
+
+def write_sql3(s_time, area):
+    conn = sqlite3.connect('C:/source/SQL/fiber')
+    cursor = conn.cursor()
+
+    cursor.execute(
+        'INSERT INTO worklog (s_time, area)'+
+        'VALUES (?,?)',
+        (s_time, area))
+
+    conn.commit()
+    conn.close()
+
+    
