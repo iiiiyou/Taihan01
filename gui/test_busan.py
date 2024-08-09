@@ -21,11 +21,15 @@ import SQL.insert_sqllite_area as areadb
 from pymodbus.client import ModbusTcpClient
 from pymodbus.transaction import *
 import time
+import logging
+
+logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
 imgsize, confidence = 640, 0.50
-cable_area_base = []
+# 케이블 면적 기준 값
+cable_area_base = 0
 
 client = ModbusTcpClient('192.168.102.20' ,502)
 # Define a class mapping dictionary
@@ -98,7 +102,111 @@ label_widgets.append(Label(root))
 # label_widget.pack() 
 label_widgets[2].place(x=667, y=47)
 
+# 케이블 기준 면적 출력 시작
+# Create three labels
+label_cable_base_area = tk.Label(root, text="케이블 기준 면적: ")
+# Grid the labels in a 2x2 grid
+label_cable_base_area.place(x=20, y=400)
+
+# Create three labels
+label_cable_base_area_value = tk.Label(root, text="측정 전")
+# Grid the labels in a 2x2 grid
+label_cable_base_area_value.place(x=120, y=400)
+def show_area_value(mask_area_base):
+    # Create three labels
+    label_cable_base_area_value = tk.Label(root, text=mask_area_base)
+    # Grid the labels in a 2x2 grid
+    label_cable_base_area_value.place(x=120, y=400)
+# 케이블 기준 면적 출력 끝
+
+
+# 현재 케이블 면척 출력 시작
+# Create three labels
+label_cable_current_area = tk.Label(root, text="현재 케이블 면적: ")
+# Grid the labels in a 2x2 grid
+label_cable_current_area.place(x=20, y=420)
+
+
+label_cable_current_area_value = tk.Label(root, text="측정 전")
+# Grid the labels in a 2x2 grid
+label_cable_current_area_value.place(x=120, y=420)
+
+def show_current_mask_area(current_mask_area):
+    label_cable_current_area_value = tk.Label(root, text=current_mask_area)
+    # Grid the labels in a 2x2 grid
+    label_cable_current_area_value.place(x=120, y=420)
+# 현재 케이블 면척 출력 끝
+
+
+#리셋버튼 값 체크 및 표시 시작
+# Create three labels
+m53_value_label = tk.Label(root, text="m53_value: ")
+m54_value_label = tk.Label(root, text="m54_value: ")
+m01_value_label = tk.Label(root, text="m01_value: ")
+# Grid the labels in a 2x2 grid
+m53_value_label.place(x=20, y=460)
+m54_value_label.place(x=20, y=480)
+m01_value_label.place(x=20, y=500)
+
+def start_btn_check():
+    try:
+        global m01, m53, m54, m53m, m54m, s_time, count, client
+        if not(client.connected):
+            client = ModbusTcpClient('192.168.102.20' ,502)
+        result_m53 = client.read_coils(0x53)
+        result_m54 = client.read_coils(0x54)
+        result_m01 = client.read_coils(0x01)
+        print("type(result_m53.bits[0]): ", type(result_m53.bits[0]))
+        print("result_m53.bits[0]: ", result_m53.bits[0])
+        print("type(result_m54.bits[0]): ", type(result_m54.bits[0]))
+        print("result_m54.bits[0]: ", result_m54.bits[0])
+        print("type(m53): ", type(m53))
+        print("type(m54): ", type(m54))
+        m53, m54 = result_m53.bits[0], result_m54.bits[0]
+        m01 = result_m01.bits[0]
+    except:
+        logging.error(traceback.format_exc())
+        pass
+    # Create three labels
+    m53_value_label = tk.Label(root, text=m53)
+    m54_value_label = tk.Label(root, text=m54)
+    m01_value_label = tk.Label(root, text=m01)
+    # Grid the labels in a 2x2 grid
+    m53_value_label.place(x=120, y=460)
+    m54_value_label.place(x=120, y=480)
+    m01_value_label.place(x=120, y=500)
+#리셋버튼 값 체크 및 표시 끝
+
 ######  tkinter  end   ######
+
+
+#Start 버튼 수동 실행 시작
+def startbtn():
+    global m01, m53, m54, m53m, m54m, s_time, count, client
+    if not(client.connected):
+        client = ModbusTcpClient('192.168.102.20' ,502)
+    result_m01 = client.read_coils(0x01)
+
+    if result_m01.bits[0] : # 1(True) 이면
+        client.write_coils(0x01,0)
+    else:
+        client.write_coils(0x01,1)
+#Start 버튼 수동 실행 끝
+
+
+#manual_reset 시작
+def manual_reset():
+    global m01, m53, m54, m53m, m54m, s_time, count, client
+    if not(client.connected):
+        client = ModbusTcpClient('192.168.102.20' ,502)
+    client.write_coils(0x01,0)
+    client.write_coils(0x53,0)
+    client.write_coils(0x54,0)
+
+    # 화면에 현재 cable area 표시
+    show_current_mask_area("준비 중")
+
+#manual_reset 끝
 
 # Make folders if not exsist #
 def makedirs(path):
@@ -106,52 +214,26 @@ def makedirs(path):
         if not os.path.exists(path):
             os.makedirs(path)
     except OSError:
+        logging.error(traceback.format_exc())
         print("Error: Failed to create the directory.")
 # Make folder end #
 
-#리셋버튼 수동 실행
-def resetbtn():
-    client.write_coils(0x53,0)
-    client.write_coils(0x54,0)
-    client.write_coils(0x01,0)
+
 
 ######  Get m53, m54 Start   ######
-m0, m53, m54, s_time, count = False, False, False, 0, 0
+m01, m53, m54, s_time, count = False, False, False, 0, 0
 # m53, m54 = False, False
 m53m, m54m = m53, m54
 # count = 0
 # s_time = 0
 getm = 0
-# def get_m():
-#     #############################
-#     global getm, m53, m54
-#     getm = getm + 1
-#     if getm <= 200:
-#         m53, m54 = False, False
-#         print(i, ": 컴퓨터 키고 변화 Start 버튼 실행 안함")
-#     if getm > 200 and getm <= 300:
-#         m53, m54 = True, False
-#         print(i, ": 컴퓨터 키고 변화 Start 버튼 처음 실행 함")
-#     if getm > 300 and getm <= 400:
-#         m53, m54 = False, True
-#         print(i, ": 컴퓨터 키고 변화 Start 버튼 두번째 실행 함")
-#     if getm > 400 and getm <= 500:
-#         m53, m54 = True, False
-#         print(i, ": 컴퓨터 키고 변화 Start 버튼 세번째 실행 함")
-#     if getm > 500:
-#         getm = 0
-######  Get m53, m54 Start   ######
+
+
 
 ######  Start button status check start   ######
 def check_start():
-    global m0, m53, m54, m53m, m54m, s_time, count, client
-    if not(client.connected):
-        client = ModbusTcpClient('192.168.102.20' ,502)
-    result_m53 = client.read_coils(0x53)
-    result_m54 = client.read_coils(0x54)
-    result_m0 = client.read_coils(0x01)
-    m53, m54 = result_m53.bits[0], result_m54.bits[0]
-    m0 = result_m0.bits[0]
+    global m53m, m54m, s_time
+    start_btn_check()
     
     # resetbtn()
 
@@ -163,17 +245,12 @@ def check_start():
 
     # 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태이면
     if m53 == False and m54 == False:
-        if not(client.connected):
-            client = ModbusTcpClient('192.168.102.20' ,502)
-        result_m53 = client.read_coils(0x53)
-        result_m54 = client.read_coils(0x54)
-        m53, m54 = result_m53.bits[0], result_m54.bits[0]
         m53m, m54m = m53, m54
         print("   ", i," :화면 전송만 실행")
         print(" m53: " + str(m53) + " m54: " + str(m54) + " m53m: " + str(m53m) + " m54m: " + str(m54m))
         show_camera()
 
-    # 방금 Start 버튼이 눌렸나?
+    # 방금 Start 버튼이 눌렸으면
     elif not((m53m == m53) & (m54m == m54)):
         count = 0
         # 면적 DB 보관할 폴더 있는지 확인 후 없으면 생성
@@ -183,13 +260,15 @@ def check_start():
         # 시작 시간 가져오기
         s_time = int(date.get_date_time())
 
-        #SQL insert (시작시간)
-        start.write_sql1(s_time)
 
         print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
         exposure_change()
         print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
         mask_area_base_set()
+        
+        #SQL insert (시작시간)
+        start.write_sql3(s_time, cable_area_base)
+        
         print("   ", i," :Detact 실행(Start 버튼 누른 후)")
         detect_camera()
         print()
@@ -231,6 +310,7 @@ mean_masks = []
 def mask_area_base_set():
     print('mask_area_base_set')
     masks = []
+    global mask_area_base
     # Exposure Time 설정 후
     # 카메라 10번 실행해서 Cable의 area 기준 값 설정
     for h in range (10):
@@ -272,15 +352,13 @@ def mask_area_base_set():
             except Exception as e:
                 print(f"===========ERROR==========: {e}")
                 traceback.print_exc(file=sys.stdout)
+                logging.error(traceback.format_exc())
                 continue
-
-    print(len(masks))
 
     # 케이블 기준 area 값 설정
     global cable_area_base
     cable_area_base = int(np.mean(masks))
-    print('cable_area_base = ', cable_area_base)
-    print('cable_area_base = ', cable_area_base)
+    show_area_value(cable_area_base)
 
     # 케이블 기준 area 값 DB저장 시작
     # insert 'cable_area_base'
@@ -326,6 +404,7 @@ def show_camera():
             except Exception as e:
                 print(f"===========ERROR==========: {e}")
                 traceback.print_exc(file=sys.stdout)
+                logging.error(traceback.format_exc())
                 continue
                 
         # Repeat the same process after every 10 milliseconds
@@ -334,7 +413,7 @@ def show_camera():
 
 
 def detect_camera():  
-    global s_time, count
+    global s_time, count, client
     grabResults = []
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
@@ -344,27 +423,36 @@ def detect_camera():
     path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
     makedirs(path)
     # 제품번호 material_number 가져오기
-    result_n0_1_2  = client.read_holding_registers(120)    # D120   제품번호
-    result_n0_3_4  = client.read_holding_registers(121)
-    result_n0_5_6  = client.read_holding_registers(122)
-    result_n0_7_8  = client.read_holding_registers(123)
-    result_n0_9_10  = client.read_holding_registers(124)
-    ad=(result_n0_1_2.registers[0])
-    bd=(result_n0_3_4.registers[0])
-    cd=(result_n0_5_6.registers[0])
-    dd=(result_n0_7_8.registers[0])
-    ed=(result_n0_9_10.registers[0])
-    c1 = (ad & 0x00ff)
-    c2 = ad >> 8
-    c3 = (bd & 0x00ff)
-    c4 = bd >> 8
-    c5 = (cd & 0x00ff)
-    c6 = cd >> 8
-    c7 = (dd & 0x00ff)
-    c8 = dd >> 8
-    c9  = (ed & 0x00ff)
-    c10 = ed >> 8
-    s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
+    try:
+        if not(client.connected):
+            client = ModbusTcpClient('192.168.102.20' ,502)
+        result_n0_1_2  = client.read_holding_registers(120)    # D120   제품번호
+        result_n0_3_4  = client.read_holding_registers(121)
+        result_n0_5_6  = client.read_holding_registers(122)
+        result_n0_7_8  = client.read_holding_registers(123)
+        result_n0_9_10  = client.read_holding_registers(124)
+        ad=(result_n0_1_2.registers[0])
+        bd=(result_n0_3_4.registers[0])
+        cd=(result_n0_5_6.registers[0])
+        dd=(result_n0_7_8.registers[0])
+        ed=(result_n0_9_10.registers[0])
+        c1 = (ad & 0x00ff)
+        c2 = ad >> 8
+        c3 = (bd & 0x00ff)
+        c4 = bd >> 8
+        c5 = (cd & 0x00ff)
+        c6 = cd >> 8
+        c7 = (dd & 0x00ff)
+        c8 = dd >> 8
+        c9  = (ed & 0x00ff)
+        c10 = ed >> 8
+        s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
+
+    except Exception as e:
+        print(f"===========ERROR==========: {e}")
+        traceback.print_exc(file=sys.stdout)
+        logging.error(traceback.format_exc())
+        pass
 
     if cam_on:
         for i in range(len(cameras)):
@@ -403,17 +491,26 @@ def detect_camera():
                     label_widgets[i].configure(image=photos[i])
                     
                     #### mask area start ####
+
+                    # Detact 된 항목중 Class가 0 ("cable") 인 항목을 찾기
+                    c_num = 0
+                    for j in range(len(results[i][0].boxes.cls)):
+                        if int(results[i][0].boxes.cls[j]) == 0:
+                            c_num = j
+                            break
+                        
                     # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
-                    if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[0]) == 0):
+                    if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[c_num]) == 0):
                         # Segmentation
                         data = results[i][0].masks.data      # masks, (N, H, W)
 
                         # generate mask
-                        mask = data[0]  # torch.unique(mask) = [0., 1.]
+                        mask = data[c_num]  # torch.unique(mask) = [0., 1.]
                         # Convert the tensor to a NumPy array
                         mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
-                        mask_count = np.count_nonzero(mask == 0)
+                        mask_count = np.count_nonzero(mask == 255)
                         masks.append(mask_count)
+                        
                     #### mask area end ####
 
                     if int(results[i][0].boxes.cls[1]) == 1:
@@ -442,15 +539,27 @@ def detect_camera():
                         type = "detect"
 
                         # 이미지 저장 위치
-                        path='C:/image/'+detected_date+'/'
-                        makedirs(path)
-                        image = "C:/image/"+detected_date+"/"+str(d_time)+".jpg"
+                        image = "C:/image/"+detected_date+"/box/"+str(d_time)+".jpg"
                         # area = 123
                         area = int(mean_masks[len(mean_masks)-1])
 
                         detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
 
                     # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
+
+                    # # 면적이상 이벤트 코드 시작 #
+                    # # 면적이상 이벤트 코드 시작 #
+                    # # 면적이상 이벤트 코드 시작 #
+                    # # 면적이상 이벤트 코드 시작 #
+                    # if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*0.8) and (len(cameras)==i+1):
+                    #     # 불량 감지 코드 추가
+                    #     print("면적불량 감지 !!!")
+                    #     print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
+                    #     print("")
+                    # # 면적이상 이벤트 코드 끝 #
+                    # # 면적이상 이벤트 코드 끝 #
+                    # # 면적이상 이벤트 코드 끝 #
+                    # # 면적이상 이벤트 코드 끝 #
 
 
                     #### mask area end ####
@@ -460,21 +569,23 @@ def detect_camera():
                 continue
 
 
+        # 화면에 현재 cable area 표시
+        if len(masks) > 2:
+            show_current_mask_area(int(np.mean(masks)))
+
+        # Mask Area에 값이 있으면 mean_masks에 append
+        if len(masks) > 2:
+            # mean_masks.append([date.get_time_in_all(), int(np.mean(masks))])
+            mean_masks.append(int(np.mean(masks)))
+
         if len(mean_masks) >= 10:
             areadb.write_sql(s_time, s_n, int(np.mean(mean_masks)))
             # mean_masks.pop(0)
             mean_masks.clear()
             print(len(mean_masks))
 
-        # Mask Area에 값이 있으면 mean_masks에 append
-        if len(masks) > 0:
-            # mean_masks.append([date.get_time_in_all(), int(np.mean(masks))])
-            mean_masks.append(int(np.mean(masks)))
 
-        # 면적이상 이벤트 코드 시작 #
-            # 불량 감지 코드 추가
-            # 외경 측정 코드 추가
-        # 면적이상 이벤트 코드 끝 #
+
         
         # Repeat the same process after every 10 milliseconds
         label_widgets[0].after(1, check_start)
@@ -514,6 +625,19 @@ btn_close = Button(root, text="Close Program", command=root.destroy)
 # btn_open.grid(row=0,column=0) 
 # btn_close.pack()
 btn_close.place(x=182, y=2)
+
+# Create a button to open the camera in GUI app 
+btn_open = Button(root, text="Start Button", command=startbtn) 
+# btn_open.grid(row=0,column=0) 
+# btn_open.pack()
+btn_open.place(x=840, y=450)
+
+# Create a button to open the camera in GUI app 
+btn_open = Button(root, text="Reset Start button", command=manual_reset) 
+# btn_open.grid(row=0,column=0) 
+# btn_open.pack()
+btn_open.place(x=840, y=490)
+
 
 # Auto start
 start_cam()
