@@ -1,0 +1,68 @@
+Basler
+
+[카메라]
+https://www.baslerweb.com/ko-kr/shop/aca1280-60gm/
+Basler ace Classic
+acA1280-60gm
+€269.00 = about 39만 8,824.78 원
+
+BASLER
+acA1280 - 60gm
+ID: 106791 - 18
+S/N: 24985755
+MAC: 00:30:53:43:13:9B
+
+[렌즈]
+https://www.baslerweb.com/ko-kr/shop/lens-c23-0816-2m-s-f8mm/
+Basler
+Lens C23-0816-2M-S f8mm
+€74.00 = about 39만 8,824.78 원
+10만 9,713.88 원
+
+Made in China	C-Mount	2/3"	BASLER	1:1.6/8mm	1:1.6/8mm	2200000178
+0.1 0.2 0.3 0.5 1.0
+1.6	2	2.8	4	.8	L	16
+
+도로명주소: 49 Beolmal-ro 102beon-gil, Dongan-gu, Anyang-si, Gyeonggi-do 205-7
+지번: 891 Gwanyang-dong, Dongan-gu, Anyang-si, Gyeonggi-do 205-7
+우편번호 14057
+경기도 안양시 동안구 벌말로102번길 49 (관양동)
+도로명주소: 경기도 안양시 동안구 벌말로102번길 49 (관양동)  205-7호
+지번: 경기도 안양시 동안구 관양동 891 안양 스마트베이2 205-7호
+
+pylon 소프트웨어
+재배포 가능 – pylon 7 런타임 – 모든 카메라 인터페이스에 적합한 드라이버와 C, C ++, .NET, GenTL 및 DirectShow/Twain용 프로그래밍 언어 런타임 포함(버전7.5.0)
+버전: 7.5.0
+운영 체제: Windows, Windows 64bit
+https://www2.baslerweb.com/ko/downloads/software-downloads/runtime-pylon-7-5-0-windows/
+https://www2.baslerweb.com/media/downloads/software/pylon_software/pylon_Runtime_7.5.0.15658.exe
+
+
+pylon 소프트웨어, Basler blaze 소프트웨어
+pylon 7.5.0 카메라 소프트웨어 제품군 Windows
+버전: 7.5.0
+운영 체제: Windows, Windows 64bit
+https://www2.baslerweb.com/ko/downloads/software-downloads/software-pylon-7-5-0-windows/
+https://www2.baslerweb.com/media/downloads/software/pylon_software/Basler_pylon_7.5.0.15658.exe
+
+
+
+애플리케이션 노트
+이 애플리케이션 노트에서는 무료 Microsoft Visual Studio 툴들을 이용해 pylon 기반 애플리케이션을 작성하는 방법을 배웁니다.
+문서 번호: AW000644
+https://www2.baslerweb.com/ko/downloads/document-downloads/how-to-build-pylon-cpp-applications-with-ms-vs/
+https://www2.baslerweb.com/media/downloads/documents/application_notes/AW00064406000_Application_Note_Build_pylon_C_Apps_with_Free_Visual_Studio_IDE.pdf
+
+pylon SDK Samples Manual
+https://docs.baslerweb.com/pylonapi/pylon-sdk-samples-manual
+
+22 44
+16 32
+
+Basler Camera Python opencv sample
+https://github.com/basler/pypylon/blob/master/samples/opencv.py
+
+
+
+
+
