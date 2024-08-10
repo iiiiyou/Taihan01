@@ -21,9 +21,9 @@ import SQL.insert_sqllite_area as areadb
 from pymodbus.client import ModbusTcpClient
 from pymodbus.transaction import *
 import time
-import logging
+# import logging
 
-logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
+# logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
@@ -42,10 +42,10 @@ tlf = pylon.TlFactory.GetInstance()
 devices = tlf.EnumerateDevices()
 
 # list of pylon Device 
-print(devices)
+# print(devices)
 cameras = []
 for i in range(len(devices)):
-    print(devices[i].GetModelName(), devices[i].GetSerialNumber())
+    # print(devices[i].GetModelName(), devices[i].GetSerialNumber())
     # conecting to the available camera
     cameras.append(pylon.InstantCamera(tlf.CreateDevice(devices[i])))
 
@@ -132,6 +132,7 @@ label_cable_current_area_value = tk.Label(root, text="측정 전")
 label_cable_current_area_value.place(x=120, y=420)
 
 def show_current_mask_area(current_mask_area):
+    # text_cma = current_mask_area, round(cable_area_base/current_mask_area*100, 2)
     label_cable_current_area_value = tk.Label(root, text=current_mask_area)
     # Grid the labels in a 2x2 grid
     label_cable_current_area_value.place(x=120, y=420)
@@ -156,16 +157,16 @@ def start_btn_check():
         result_m53 = client.read_coils(0x53)
         result_m54 = client.read_coils(0x54)
         result_m01 = client.read_coils(0x01)
-        print("type(result_m53.bits[0]): ", type(result_m53.bits[0]))
-        print("result_m53.bits[0]: ", result_m53.bits[0])
-        print("type(result_m54.bits[0]): ", type(result_m54.bits[0]))
-        print("result_m54.bits[0]: ", result_m54.bits[0])
-        print("type(m53): ", type(m53))
-        print("type(m54): ", type(m54))
+        # print("type(result_m53.bits[0]): ", type(result_m53.bits[0]))
+        # print("result_m53.bits[0]: ", result_m53.bits[0])
+        # print("type(result_m54.bits[0]): ", type(result_m54.bits[0]))
+        # print("result_m54.bits[0]: ", result_m54.bits[0])
+        # print("type(m53): ", type(m53))
+        # print("type(m54): ", type(m54))
         m53, m54 = result_m53.bits[0], result_m54.bits[0]
         m01 = result_m01.bits[0]
     except:
-        logging.error(traceback.format_exc())
+        # logging.error(traceback.format_exc())
         pass
     # Create three labels
     m53_value_label = tk.Label(root, text=m53)
@@ -187,6 +188,8 @@ def startbtn():
         client = ModbusTcpClient('192.168.102.20' ,502)
     result_m01 = client.read_coils(0x01)
 
+    show_area_value("준비 중")
+    show_current_mask_area("준비 중")
     if result_m01.bits[0] : # 1(True) 이면
         client.write_coils(0x01,0)
     else:
@@ -214,12 +217,12 @@ def makedirs(path):
         if not os.path.exists(path):
             os.makedirs(path)
     except OSError:
-        logging.error(traceback.format_exc())
+        # logging.error(traceback.format_exc())
         print("Error: Failed to create the directory.")
 # Make folder end #
 
 
-
+time1, time2 = 0, 0
 ######  Get m53, m54 Start   ######
 m01, m53, m54, s_time, count = False, False, False, 0, 0
 # m53, m54 = False, False
@@ -246,8 +249,9 @@ def check_start():
     # 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태이면
     if m53 == False and m54 == False:
         m53m, m54m = m53, m54
-        print("   ", i," :화면 전송만 실행")
-        print(" m53: " + str(m53) + " m54: " + str(m54) + " m53m: " + str(m53m) + " m54m: " + str(m54m))
+        # print("   ", i," :화면 전송만 실행")
+        # print(" m53: " + str(m53) + " m54: " + str(m54) + " m53m: " + str(m53m) + " m54m: " + str(m54m))
+        show_area_value("준비 중")
         show_camera()
 
     # 방금 Start 버튼이 눌렸으면
@@ -261,23 +265,21 @@ def check_start():
         s_time = int(date.get_date_time())
 
 
-        print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
+        # print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
         exposure_change()
-        print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
+        # print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
         mask_area_base_set()
         
         #SQL insert (시작시간)
         start.write_sql3(s_time, cable_area_base)
         
-        print("   ", i," :Detact 실행(Start 버튼 누른 후)")
+        # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
         detect_camera()
-        print()
         m53m, m54m = m53, m54
     # Start 버튼 눌른 후 다음 Start 버튼 누르기 전인가?
     else:
-        print("   ", i," :Detact 실행")
+        # print("   ", i," :Detact 실행")
         detect_camera()
-        print()
 
 ######  Start button status check end   ######
 
@@ -302,13 +304,13 @@ def exposure_change():
             cameras[i].ExposureTimeAbs.SetValue(300)
         # Set Camera Exposure Time End
     
-    print('camera bright:', int(np.mean(cams_bright_mean)), ', len:', len(cams_bright_mean))
+    # print('camera bright:', int(np.mean(cams_bright_mean)), ', len:', len(cams_bright_mean))
 
 
 mean_masks = []
 
 def mask_area_base_set():
-    print('mask_area_base_set')
+    # print('mask_area_base_set')
     masks = []
     global mask_area_base
     # Exposure Time 설정 후
@@ -352,7 +354,7 @@ def mask_area_base_set():
             except Exception as e:
                 print(f"===========ERROR==========: {e}")
                 traceback.print_exc(file=sys.stdout)
-                logging.error(traceback.format_exc())
+                # logging.error(traceback.format_exc())
                 continue
 
     # 케이블 기준 area 값 설정
@@ -404,7 +406,7 @@ def show_camera():
             except Exception as e:
                 print(f"===========ERROR==========: {e}")
                 traceback.print_exc(file=sys.stdout)
-                logging.error(traceback.format_exc())
+                # logging.error(traceback.format_exc())
                 continue
                 
         # Repeat the same process after every 10 milliseconds
@@ -422,6 +424,11 @@ def detect_camera():
     makedirs(path)
     path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
     makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
+    makedirs(path)
+
     # 제품번호 material_number 가져오기
     try:
         if not(client.connected):
@@ -451,7 +458,7 @@ def detect_camera():
     except Exception as e:
         print(f"===========ERROR==========: {e}")
         traceback.print_exc(file=sys.stdout)
-        logging.error(traceback.format_exc())
+        # logging.error(traceback.format_exc())
         pass
 
     if cam_on:
@@ -513,37 +520,51 @@ def detect_camera():
                         
                     #### mask area end ####
 
-                    if int(results[i][0].boxes.cls[1]) == 1:
-                        detected_time = date.get_time_in_mmddss()
-                        detected_date = date.get_date_in_yyyymmdd()
-                        cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
-                        cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'_Original.jpg', images[i])
-                        count = count + 1
+                    # Detact 된 항목중 Class가 0 ("defact") 인 항목을 찾기
+                    d_num = 0
+                    for k in range(len(results[i][0].boxes.cls)):
+                        if int(results[i][0].boxes.cls[k]) == 1:
+                            d_num = k
+                            break
 
-                        # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
+                    global time1, time2
 
-                        # 감지 시간 저장
-                        d_time = int(detected_time)
+                    if int(results[i][0].boxes.cls[d_num]) == 1:
+                        time1 = int(date.get_time_in_mmddss())
 
-                        # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
-                        client.write_coils(0x0020,1)
-                        client.write_coils(0x0020,0)
-                        m_m = i + 1000
-                        ft_ft = i + 5000
-                        d1000_m  = client.read_holding_registers(m_m)
-                        d5000_ft = client.read_holding_registers(ft_ft)
-                        d_meter = d1000_m.registers[0]
-                        d_feet = d5000_ft.registers[0]
-                        
-                        # 오류 유형
-                        type = "detect"
+                        if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 1):
+                            detected_time = date.get_time_in_mmddss()
+                            detected_date = date.get_date_in_yyyymmdd()
+                            cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
+                            cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'_Original.jpg', images[i])
+                            count = count + 1
 
-                        # 이미지 저장 위치
-                        image = "C:/image/"+detected_date+"/box/"+str(d_time)+".jpg"
-                        # area = 123
-                        area = int(mean_masks[len(mean_masks)-1])
+                            # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
 
-                        detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                            # 감지 시간 저장
+                            d_time = int(detected_time)
+
+                            # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                            client.write_coils(0x0020,1)
+                            client.write_coils(0x0020,0)
+                            m_m = i + 1000
+                            ft_ft = i + 5000
+                            d1000_m  = client.read_holding_registers(m_m)
+                            d5000_ft = client.read_holding_registers(ft_ft)
+                            d_meter = d1000_m.registers[0]
+                            d_feet = d5000_ft.registers[0]
+                            
+                            # 오류 유형
+                            type = "detect"
+
+                            # 이미지 저장 위치
+                            image = "C:/image/"+detected_date+"/box/"+str(d_time)+".jpg"
+                            # area = 123
+                            area = int(mean_masks[len(mean_masks)-1])
+
+                            detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                            # time.sleep(1)
+                            time2 = int(date.get_time_in_mmddss())
 
                     # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
 
@@ -551,11 +572,42 @@ def detect_camera():
                     # # 면적이상 이벤트 코드 시작 #
                     # # 면적이상 이벤트 코드 시작 #
                     # # 면적이상 이벤트 코드 시작 #
-                    # if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*0.8) and (len(cameras)==i+1):
-                    #     # 불량 감지 코드 추가
-                    #     print("면적불량 감지 !!!")
-                    #     print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
-                    #     print("")
+                    if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.2) and (len(cameras)==i+1):
+                        time1 = int(date.get_time_in_mmddss())
+                        # 불량 감지 코드 추가
+                        # print("면적불량 감지 !!!")
+                        # print("카메라 숫자: ", len(cameras))
+                        # print("masks 에 담긴 숫자: ", len(masks))
+                        # print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
+                        if (time1-time2 > 1):
+                            for l in range(len(cameras)):
+                                # print(l)
+                                detected_time = date.get_time_in_mmddss()
+                                detected_date = date.get_date_in_yyyymmdd()
+                                cv2.imwrite('C:/image/'+detected_date+'/area_box/'+detected_time+'.jpg', results[l][0].plot())
+                                cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+detected_time+'_Original.jpg', images[l])
+                                count = count + 1
+                            
+                                # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                                client.write_coils(0x0020,1)
+                                client.write_coils(0x0020,0)
+                                m_m = i + 1000
+                                ft_ft = i + 5000
+                                d1000_m  = client.read_holding_registers(m_m)
+                                d5000_ft = client.read_holding_registers(ft_ft)
+                                d_meter = d1000_m.registers[0]
+                                d_feet = d5000_ft.registers[0]
+
+                                type = "area"
+                                
+                                area = int(mean_masks[len(mean_masks)-1])
+                                
+                                # 이미지 저장 위치
+                                image = "C:/image/"+detected_date+"/area_box/"+str(detected_time)+".jpg"
+                                
+                                detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
+                            time2 = int(date.get_time_in_mmddss())
+                        # print("")
                     # # 면적이상 이벤트 코드 끝 #
                     # # 면적이상 이벤트 코드 끝 #
                     # # 면적이상 이벤트 코드 끝 #
@@ -582,7 +634,7 @@ def detect_camera():
             areadb.write_sql(s_time, s_n, int(np.mean(mean_masks)))
             # mean_masks.pop(0)
             mean_masks.clear()
-            print(len(mean_masks))
+            # print(len(mean_masks))
 
 
 
@@ -602,7 +654,7 @@ def start_cam():
 def stop_cam():
     global cam_on
     # modbus.write_detected([1,0,0], client)
-    print("Sent modbus [1,0,0]")
+    # print("Sent modbus [1,0,0]")
     cam_on = False
 
 
@@ -655,7 +707,7 @@ except Exception as e:
 finally:
     cv2.destroyAllWindows()
     # modbus.write_detected([1,0,0], client)
-    print("Sent modbus [1,0,0]")
-    print('fin')
+    # print("Sent modbus [1,0,0]")
+    # print('fin')
 ######  tkinter  start   ######
   
