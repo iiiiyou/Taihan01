@@ -558,7 +558,7 @@ def detect_camera():
                             type = "detect"
 
                             # 이미지 저장 위치
-                            image = "C:/image/"+detected_date+"/box/"+str(d_time)+".jpg"
+                            image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
                             # area = 123
                             area = int(mean_masks[len(mean_masks)-1])
 
