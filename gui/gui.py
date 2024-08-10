@@ -455,7 +455,7 @@ def show_camera():
                 continue
                 
         # Repeat the same process after every 10 milliseconds
-        label_camera1.after(1, check_start)
+        label_camera1.after(30, check_start)
                 ######  tkinter  end   ###### 
 
 
@@ -698,7 +698,7 @@ def detect_camera():
 
         
         # Repeat the same process after every 10 milliseconds
-        label_camera1.after(1, check_start)
+        label_camera1.after(30, check_start)
 
                 ######  tkinter  end   ######
   
