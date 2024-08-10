@@ -33,6 +33,7 @@ def fetch_data(start_date, end_date, db_folder):
                 image
             FROM detection
             WHERE s_time BETWEEN ? AND ?
+            order by d_time desc
             """
             cur.execute(query, (start_date, end_date))
             rows = cur.fetchall()
