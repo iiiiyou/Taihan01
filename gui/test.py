@@ -222,7 +222,7 @@ def makedirs(path):
 # Make folder end #
 
 
-
+time1, time2 = 0, 0
 ######  Get m53, m54 Start   ######
 m01, m53, m54, s_time, count = False, False, False, 0, 0
 # m53, m54 = False, False
@@ -424,6 +424,11 @@ def detect_camera():
     makedirs(path)
     path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
     makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
+    makedirs(path)
+
     # 제품번호 material_number 가져오기
     try:
         if not(client.connected):
@@ -515,44 +520,51 @@ def detect_camera():
                         
                     #### mask area end ####
 
-                    # Detact 된 항목중 Class가 0 ("cable") 인 항목을 찾기
+                    # Detact 된 항목중 Class가 0 ("defact") 인 항목을 찾기
                     d_num = 0
                     for k in range(len(results[i][0].boxes.cls)):
                         if int(results[i][0].boxes.cls[k]) == 1:
                             d_num = k
                             break
 
+                    global time1, time2
+
                     if int(results[i][0].boxes.cls[d_num]) == 1:
-                        detected_time = date.get_time_in_mmddss()
-                        detected_date = date.get_date_in_yyyymmdd()
-                        cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
-                        cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'_Original.jpg', images[i])
-                        count = count + 1
+                        time1 = int(date.get_time_in_mmddss())
 
-                        # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
+                        if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 1):
+                            detected_time = date.get_time_in_mmddss()
+                            detected_date = date.get_date_in_yyyymmdd()
+                            cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
+                            cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'_Original.jpg', images[i])
+                            count = count + 1
 
-                        # 감지 시간 저장
-                        d_time = int(detected_time)
+                            # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
 
-                        # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
-                        client.write_coils(0x0020,1)
-                        client.write_coils(0x0020,0)
-                        m_m = i + 1000
-                        ft_ft = i + 5000
-                        d1000_m  = client.read_holding_registers(m_m)
-                        d5000_ft = client.read_holding_registers(ft_ft)
-                        d_meter = d1000_m.registers[0]
-                        d_feet = d5000_ft.registers[0]
-                        
-                        # 오류 유형
-                        type = "detect"
+                            # 감지 시간 저장
+                            d_time = int(detected_time)
 
-                        # 이미지 저장 위치
-                        image = "C:/image/"+detected_date+"/box/"+str(d_time)+".jpg"
-                        # area = 123
-                        area = int(mean_masks[len(mean_masks)-1])
+                            # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                            client.write_coils(0x0020,1)
+                            client.write_coils(0x0020,0)
+                            m_m = i + 1000
+                            ft_ft = i + 5000
+                            d1000_m  = client.read_holding_registers(m_m)
+                            d5000_ft = client.read_holding_registers(ft_ft)
+                            d_meter = d1000_m.registers[0]
+                            d_feet = d5000_ft.registers[0]
+                            
+                            # 오류 유형
+                            type = "detect"
 
-                        detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                            # 이미지 저장 위치
+                            image = "C:/image/"+detected_date+"/box/"+str(d_time)+".jpg"
+                            # area = 123
+                            area = int(mean_masks[len(mean_masks)-1])
+
+                            detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                            # time.sleep(1)
+                            time2 = int(date.get_time_in_mmddss())
 
                     # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
 
@@ -561,18 +573,40 @@ def detect_camera():
                     # # 면적이상 이벤트 코드 시작 #
                     # # 면적이상 이벤트 코드 시작 #
                     if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.2) and (len(cameras)==i+1):
+                        time1 = int(date.get_time_in_mmddss())
                         # 불량 감지 코드 추가
                         # print("면적불량 감지 !!!")
                         # print("카메라 숫자: ", len(cameras))
                         # print("masks 에 담긴 숫자: ", len(masks))
                         # print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
-                        for l in range(len(cameras)):
-                            # print(l)
-                            detected_time = date.get_time_in_mmddss()
-                            detected_date = date.get_date_in_yyyymmdd()
-                            cv2.imwrite('C:/image/'+detected_date+'/area_box/'+detected_time+'.jpg', results[l][0].plot())
-                            cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+detected_time+'_Original.jpg', images[l])
-                            count = count + 1
+                        if (time1-time2 > 1):
+                            for l in range(len(cameras)):
+                                # print(l)
+                                detected_time = date.get_time_in_mmddss()
+                                detected_date = date.get_date_in_yyyymmdd()
+                                cv2.imwrite('C:/image/'+detected_date+'/area_box/'+detected_time+'.jpg', results[l][0].plot())
+                                cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+detected_time+'_Original.jpg', images[l])
+                                count = count + 1
+                            
+                                # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                                client.write_coils(0x0020,1)
+                                client.write_coils(0x0020,0)
+                                m_m = i + 1000
+                                ft_ft = i + 5000
+                                d1000_m  = client.read_holding_registers(m_m)
+                                d5000_ft = client.read_holding_registers(ft_ft)
+                                d_meter = d1000_m.registers[0]
+                                d_feet = d5000_ft.registers[0]
+
+                                type = "area"
+                                
+                                area = int(mean_masks[len(mean_masks)-1])
+                                
+                                # 이미지 저장 위치
+                                image = "C:/image/"+detected_date+"/area_box/"+str(detected_time)+".jpg"
+                                
+                                detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
+                            time2 = int(date.get_time_in_mmddss())
                         # print("")
                     # # 면적이상 이벤트 코드 끝 #
                     # # 면적이상 이벤트 코드 끝 #

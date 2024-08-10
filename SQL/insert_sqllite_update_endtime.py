@@ -2,7 +2,7 @@ import sqlite3
 import util.format_date_time as ti
 
 def write_sql(s_time, e_time):
-    conn = sqlite3.connect('C:/source/SQL/fiber')
+    conn = sqlite3.connect('C:/source/SQL/fiber.db')
     cursor = conn.cursor()
 
     cursor.execute(
