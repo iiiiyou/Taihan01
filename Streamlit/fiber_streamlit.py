@@ -4,7 +4,6 @@ import pandas as pd
 from PIL import Image
 from io import BytesIO
 from datetime import date, datetime, timedelta
-import requests
 import os
 
 # 페이지 설정
@@ -33,7 +32,7 @@ def fetch_data(start_date, end_date, db_folder):
                 image
             FROM detection
             WHERE s_time BETWEEN ? AND ?
-            order by d_time desc
+            ORDER BY s_time, seq2 DESC
             """
             cur.execute(query, (start_date, end_date))
             rows = cur.fetchall()
@@ -52,122 +51,157 @@ def to_excel(df):
     output = BytesIO()
     with pd.ExcelWriter(output, engine='openpyxl') as writer:
         df.to_excel(writer, index=False, sheet_name='Sheet1')
-        writer.close()
     processed_data = output.getvalue()
     return processed_data
 
 # Streamlit 앱
 st.title("불량품 탐지 데이터 조회")
 
-# 날짜 입력 필드
-col1, col2, col3, col4 = st.columns(4)
-start_date = col1.date_input("조회일자", value=date.today())
-end_date = start_date + timedelta(days=1)
+# 조회일자, 달력, Excel 다운로드 버튼을 타이틀 우측에 배치
+col1, col2, col3, col4 = st.columns([1, 2, 2, 1])
+
+with col1:
+    st.markdown("### 조회일자:")
+
+with col2:
+    start_date = st.date_input("조회 시작일", value=date.today(), label_visibility="collapsed")
+    
+    # 현재 세션 상태의 시작일자와 비교하여 변경이 있을 때만 이미지 초기화
+    if 'last_start_date' not in st.session_state or st.session_state['last_start_date'] != start_date:
+        st.session_state['image_url'] = None
+        st.session_state['origin_image_url'] = None
+        st.session_state['image_pk'] = None
+        st.session_state['image_load_error'] = False
+        st.session_state['last_start_date'] = start_date
 
 # 날짜를 정수로 변환
-# start_date_int =20240803152416
+end_date = start_date + timedelta(days=1)
 start_date_int = int(start_date.strftime("%Y%m%d%H%M%S"))
 end_date_int = int(end_date.strftime("%Y%m%d%H%M%S"))
+start_date_str = start_date.strftime("%Y%m%d")
+end_date_str = end_date.strftime("%Y%m%d")
 
-# 폴더 경로 입력 필드
-# db_folder = "d:\python"
-# image_folder = "C:\image\20240804"
-# db_folder = st.text_input("DB 파일이 저장된 폴더 경로", value=".")
-# image_folder = st.text_input("이미지 파일이 저장된 폴더 경로", value=".")
-# folder_name = start_date.strftime("%Y%m%d")
+# 폴더 경로 설정
 folder_name = r"C:\source\sql"
 db_folder = os.path.join(folder_name)  
-image_folder = r"C:\image\20240810"   #db에 경로없이 이미지만 있는 경우
+image_folder = os.path.join(r"C:\image", start_date_str, "box")
+origin_folder = os.path.join(r"C:\image", start_date_str, "original")
 
-# 폴더 존재 여부 확인
-if not os.path.exists(db_folder):
-    st.error(f"DB 폴더 ({db_folder})가 존재하지 않습니다.")
+# 데이터 로드
+rows, col_names = fetch_data(start_date_int, end_date_int, db_folder)
+if rows:
+    df = pd.DataFrame(rows, columns=col_names)
 else:
-    # 데이터프레임 생성
-    rows, col_names = fetch_data(start_date_int, end_date_int, db_folder)
-    if rows:
-        df = pd.DataFrame(rows, columns=col_names)
-    else:
-        st.warning("해당 기간에 데이터가 존재하지 않습니다.")
-        df = pd.DataFrame()
+    df = pd.DataFrame()
 
-    # 엑셀 파일로 다운로드 버튼 추가
-    if not df.empty:
-        excel_file = to_excel(df)
-        current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
-        file_name = f"data_{current_time}.xlsx"
-        col4.download_button(
+# Excel 다운로드 버튼
+if not df.empty:
+    excel_file = to_excel(df)
+    current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
+    file_name = f"data_{current_time}.xlsx"
+    
+    with col4:
+        st.download_button(
             label="Excel 다운로드",
             data=excel_file,
             file_name=file_name,
             mime="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
 
-    # 전체 컨테이너의 너비를 조정하는 스타일 적용
-    st.markdown("""
-        <style>
-        .main .block-container {
-            max-width: 85%;
-            padding-left: 5%;
-            padding-right: 5%;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+# DataFrame과 관련된 스타일을 설정
+st.markdown("""
+    <style>
+    .main .block-container {
+        max-width: 85%;
+        padding-left: 5%;
+        padding-right: 5%;
+    }
+    .dataframe-container {
+        max-height: 600px;
+        overflow-y: scroll;
+        border: 1px solid #ccc;
+    }
+    .dataframe-container thead th {
+        position: sticky;
+        top: 0;
+        background-color: #f0f0f0;
+        text-align: center;
+    }
+    .dataframe-container th, .dataframe-container td {
+        text-align: center;
+    }
+    .dataframe-container a {
+        text-decoration: none;
+        color: blue.
+    }
+    </style>
+    """, unsafe_allow_html=True)
 
-    # 데이터프레임 출력 및 버튼 추가
-    st.markdown("""
-        <style>
-        .dataframe-container {
-            max-height: 600px;
-            overflow-y: scroll;
-            border: 1px solid #ccc;
-        }
-        .dataframe-container thead th {
-            position: sticky;
-            top: 0;
-            background-color: #f0f0f0;
-            text-align: center;
-        }
-        .dataframe-container th, .dataframe-container td {
-            text-align: center;
-        }
-        .dataframe-container a {
-            text-decoration: none;
-            color: blue;
-        }
-        </style>
-        """, unsafe_allow_html=True)
+st.markdown('<div class="dataframe-container">', unsafe_allow_html=True)
 
-    st.markdown('<div class="dataframe-container">', unsafe_allow_html=True)
+# 항목명 추가 (불량이미지 항목을 히든으로 처리)
+column_names = ["시작시간", "순번", "유형", "제품번호", "넓이", "탐지시간", "불량품이미지"]
+header_cols = st.columns([6, 2, 3, 5, 3, 6, 17])  # 불량이미지 열 제외
 
-    # 데이터 출력 및 버튼 추가
-    columns_widths = [6, 2, 3, 5, 3, 6, 20]
+for col, name in zip(header_cols, column_names):
+    col.markdown(f"**{name}**")
+
+# 데이터가 없으면 메시지 출력
+if df.empty:
+    st.warning("해당 기간에 데이터가 존재하지 않습니다.")
+else:
+    # 데이터 출력 및 버튼 추가 (불량이미지 열은 제외)
     for i, row in df.iterrows():
-        cols = st.columns(columns_widths + [17])  # 마지막 열에 버튼 열 추가
-        for col, val in zip(cols[:-1], row):  # 마지막 열은 버튼이 들어갈 자리
-            if col == cols[-2]:  # 불량품이미지 열
-                col.markdown(val, unsafe_allow_html=True)
-            else:
-                col.write(val)
+        cols = st.columns([6, 2, 3, 5, 3, 6, 17])  # 불량이미지 열 제외, 버튼 열 추가
+        for col, val in zip(cols[:-1], row[:-1]):  # 불량이미지 데이터는 제외
+            col.write(val)
         # 버튼 추가
         button_col = cols[-1]
         if button_col.button(f'이미지 보기 ({row["s_time"]} {row["seq2"]})', key=f'button_{i}'):
             try:
                 image_path = os.path.join(image_folder, row["image"])
-                # st.write(image_path)
+                origin_image_path = os.path.join(origin_folder, os.path.basename(row["image"]))
+                
                 st.session_state['image_url'] = image_path
+                st.session_state['origin_image_url'] = origin_image_path
                 st.session_state['image_pk'] = f'{row["s_time"]} {row["seq2"]}'
+                st.session_state['image_load_error'] = False
             except Exception as e:
-                st.error("이미지 경로에 오류가 있습니다. 확인 후 다시 이용하시기 바랍니다!")
+                st.session_state['image_load_error'] = True
+                st.session_state['image_load_error_msg'] = "이미지 경로에 오류가 있습니다. 확인 후 다시 이용하시기 바랍니다!"
 
     st.markdown('</div>', unsafe_allow_html=True)
 
-    # 하단에 이미지를 표시하거나 숨깁니다.
-    with st.container():
-        if 'image_url' in st.session_state and 'image_pk' in st.session_state:
-            image_url = st.session_state['image_url']
+# 하단에 이미지를 표시하거나 숨깁니다.
+with st.container():
+    # 이미지가 클릭되었을 때만 이미지를 표시하도록 수정
+    if st.session_state['image_url'] and st.session_state['origin_image_url'] and st.session_state['image_pk']:
+        if st.session_state['image_load_error']:
+            st.error(st.session_state['image_load_error_msg'])
+        else:
             try:
-                img = Image.open(image_url)
-                st.image(img, caption=f"불량품이미지  {st.session_state['image_pk']}", use_column_width=True)
+                col1, col2 = st.columns(2)
+                
+                # 좌측에 기존 이미지 표시
+                with col1:
+                    if os.path.exists(st.session_state['image_url']):  # 파일 존재 확인
+                        img = Image.open(st.session_state['image_url'])
+                        st.image(img, caption=f"불량품이미지 (box)  {st.session_state['image_pk']}", use_column_width=True)
+                    else:
+                        st.error(f"이미지 파일이 존재하지 않습니다: {st.session_state['image_url']}")
+                
+                # 우측에 원본 이미지 표시
+                with col2:
+                    if os.path.exists(st.session_state['origin_image_url']):  # 파일 존재 확인
+                        origin_img = Image.open(st.session_state['origin_image_url'])
+                        st.image(origin_img, caption=f"원본이미지 (origin)  {st.session_state['image_pk']}", use_column_width=True)
+                    else:
+                        st.error(f"원본 이미지 파일이 존재하지 않습니다: {st.session_state['origin_image_url']}")
+
             except Exception as e:
                 st.error("이미지를 로드하는 데 오류가 발생했습니다. 파일 경로를 확인하세요.")
+    else:
+        # 이미지가 클릭되지 않았거나 이미지 URL이 없는 경우에는 아무것도 표시하지 않음
+        st.session_state['image_url'] = None
+        st.session_state['origin_image_url'] = None
+        st.session_state['image_pk'] = None

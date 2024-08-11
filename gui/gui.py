@@ -618,7 +618,7 @@ def detect_camera():
                             detected_time = date.get_time_in_mmddss()
                             detected_date = date.get_date_in_yyyymmdd()
                             cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
-                            cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'_Original.jpg', images[i])
+                            cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'.jpg', images[i])
                             count = count + 1
 
                             # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
@@ -654,7 +654,7 @@ def detect_camera():
                     # # 면적이상 이벤트 코드 시작 #
                     # # 면적이상 이벤트 코드 시작 #
                     # # 면적이상 이벤트 코드 시작 #
-                    if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.2) and (len(cameras)==i+1):
+                    if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.1) and (len(cameras)==i+1):
                         time1 = int(date.get_time_in_mmddss())
                         # 불량 감지 코드 추가
                         # print("면적불량 감지 !!!")
@@ -667,7 +667,7 @@ def detect_camera():
                                 detected_time = date.get_time_in_mmddss()
                                 detected_date = date.get_date_in_yyyymmdd()
                                 cv2.imwrite('C:/image/'+detected_date+'/area_box/'+detected_time+'.jpg', results[l][0].plot())
-                                cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+detected_time+'_Original.jpg', images[l])
+                                cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+detected_time+'.jpg', images[l])
                                 count = count + 1
                             
                                 # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
