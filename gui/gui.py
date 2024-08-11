@@ -183,14 +183,30 @@ def show_m54_value(m54_value):
     value_m54.config(text = m54_value)
 # value_m54.pack()
 
+# m04 라벨
+label_m04 = Label(win)
+label_m04.config(text = "m04_value: ")
+label_m04.place(x=20, y=520)
+# label_m54.pack()
+
+# m54 값
+value_m04 = Label(win)
+value_m04.config(text = "측정 전")
+value_m04.place(x=120, y=520)
+def show_m04_value(m04_value):
+    value_m04.config(text = m04_value)
+# value_m54.pack()
+
+
 def start_btn_check():
     try:
-        global m01, m53, m54, m53m, m54m, s_time, count, client
+        global m01, m04, m53, m54, m53m, m54m, s_time, count, client
         if not(client.connected):
             client = ModbusTcpClient('192.168.102.20' ,502)
         result_m53 = client.read_coils(0x53)
         result_m54 = client.read_coils(0x54)
         result_m01 = client.read_coils(0x01)
+        result_m04 = client.read_coils(0x04)
         # print("type(result_m53.bits[0]): ", type(result_m53.bits[0]))
         # print("result_m53.bits[0]: ", result_m53.bits[0])
         # print("type(result_m54.bits[0]): ", type(result_m54.bits[0]))
@@ -199,12 +215,14 @@ def start_btn_check():
         # print("type(m54): ", type(m54))
         m53, m54 = result_m53.bits[0], result_m54.bits[0]
         m01 = result_m01.bits[0]
+        m04 = result_m04.bits[0]
     except:
         # logging.error(traceback.format_exc())
         pass
     show_m01_value(m01)
     show_m53_value(m53)
     show_m54_value(m54)
+    show_m04_value(m04)
 #리셋버튼 값 체크 및 표시 끝
 
 ######  tkinter  end   ######
@@ -254,7 +272,7 @@ def makedirs(path):
 
 time1, time2 = 0, 0
 ######  Get m53, m54 Start   ######
-m01, m53, m54, s_time, count = False, False, False, 0, 0
+m01, m04, m53, m54, s_time, count = False, False, False, False, 0, 0
 # m53, m54 = False, False
 m53m, m54m = m53, m54
 # count = 0
@@ -265,7 +283,7 @@ getm = 0
 
 ######  Start button status check start   ######
 def check_start():
-    global m53m, m54m, s_time
+    global m04, m53m, m54m, s_time
     start_btn_check()
     
     # resetbtn()
@@ -276,11 +294,16 @@ def check_start():
     # 광통신 start 버튼 처음 누름              -> m53, M54 = True, False
     # 광통신 start 버튼 두번째 누름            -> m53, M54 = False, True
 
+
     # 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태이면
     if m53 == False and m54 == False:
         m53m, m54m = m53, m54
         # print("   ", i," :화면 전송만 실행")
         # print(" m53: " + str(m53) + " m54: " + str(m54) + " m53m: " + str(m53m) + " m54m: " + str(m54m))
+        show_camera()
+    
+    # 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태이면
+    elif m04:
         show_camera()
 
     # 방금 Start 버튼이 눌렸으면
@@ -388,8 +411,9 @@ def mask_area_base_set():
 
     # 케이블 기준 area 값 설정
     global cable_area_base
-    cable_area_base = int(np.mean(masks))
-    show_area_base(cable_area_base)
+    if len(masks) > 1:
+        cable_area_base = int(np.mean(masks))
+        show_area_base(cable_area_base)
 
     # 케이블 기준 area 값 DB저장 시작
     # insert 'cable_area_base'
