@@ -638,8 +638,8 @@ def detect_camera():
                                 # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
                                 client.write_coils(0x0020,1)
                                 client.write_coils(0x0020,0)
-                                m_m = i + 1000
-                                ft_ft = i + 5000
+                                m_m = count + 1000
+                                ft_ft = count + 5000
                                 d1000_m  = client.read_holding_registers(m_m)
                                 d5000_ft = client.read_holding_registers(ft_ft)
                                 d_meter = d1000_m.registers[0]
@@ -682,8 +682,8 @@ def detect_camera():
                                     # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
                                     client.write_coils(0x0020,1)
                                     client.write_coils(0x0020,0)
-                                    m_m = i + 1000
-                                    ft_ft = i + 5000
+                                    m_m = count + 1000
+                                    ft_ft = count + 5000
                                     d1000_m  = client.read_holding_registers(m_m)
                                     d5000_ft = client.read_holding_registers(ft_ft)
                                     d_meter = d1000_m.registers[0]
