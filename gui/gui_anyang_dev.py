@@ -75,79 +75,113 @@ width, height = 1000, 600
 # Create a Tkinter window
 cam_on = False
 cam_count = 0
-root = tk.Tk()
-root.title("Detection Display")
+win = Tk()
+win.title("Detection Display")
 
 # creating fixed geometry of the 
 # tkinter window with dimensions 1300x700
-root.geometry("1000x600+100+0")
+win.geometry("1000x600+100+0")
 
 # Create a label to display the video frames
-label = tk.Label(root)
-label.pack()
+# label = tk.Label(win)
+# label.pack()
 
-label_widgets = []
-# Create a label and display it on app 
-label_widgets.append(Label(root))
-# label_widget.pack() 
-label_widgets[0].place(x=1, y=47)
+label_cameras = []
 
-# Create a label and display it on app 
-label_widgets.append(Label(root))
-# label_widget.pack() 
-label_widgets[1].place(x=334, y=47)
+# Camera 0
+label_camera1 = Label(win)
+label_camera1.place(x=1, y=47)
+# img = PhotoImage(file = "C:/source/tkinter/Daum_communication_logo.svg.png", master = win)
+# img = img.subsample(3)
+# lab_d.config(image = img)
+# lab_d.pack()
+def show_camera1(camera1):
+    label_camera1.config(image = camera1)
+# label_camera1.pack()
 
-# Create a label and display it on app 
-label_widgets.append(Label(root))
-# label_widget.pack() 
-label_widgets[2].place(x=667, y=47)
+# Camera 2
+label_camera2 = Label(win)
+label_camera2.place(x=334, y=47)
+def show_camera2(camera2):
+    label_camera2.config(image = camera2)
+# label_camera2.pack()
 
-# 케이블 기준 면적 출력 시작
-# Create three labels
-label_cable_base_area = tk.Label(root, text="케이블 기준 면적: ")
-# Grid the labels in a 2x2 grid
-label_cable_base_area.place(x=20, y=400)
+# Camera 3
+label_camera3 = Label(win)
+label_camera3.place(x=667, y=47)
+def show_camera3(camera3):
+    label_camera3.config(image = camera3)
+# label_camera3.pack()
 
-# Create three labels
-label_cable_base_area_value = tk.Label(root, text="측정 전")
-# Grid the labels in a 2x2 grid
-label_cable_base_area_value.place(x=120, y=400)
-def show_area_value(mask_area_base):
-    # Create three labels
-    label_cable_base_area_value = tk.Label(root, text=mask_area_base)
-    # Grid the labels in a 2x2 grid
-    label_cable_base_area_value.place(x=120, y=400)
-# 케이블 기준 면적 출력 끝
+# 케이블 기준 면적 라벨
+label_cable1 = Label(win)
+label_cable1.config(text = "케이블 기준 면적: ")
+label_cable1.place(x=20, y=400)
+# label_cable1.pack()
 
+# 케이블 기준 면적 값
+value_cable1= Label(win)
+value_cable1.config(text = "측정 전")
+value_cable1.place(x=120, y=400)
+def show_area_base(mask_area_base):
+    value_cable1.config(text = mask_area_base)
+# value_cable1.pack()
 
-# 현재 케이블 면척 출력 시작
-# Create three labels
-label_cable_current_area = tk.Label(root, text="현재 케이블 면적: ")
-# Grid the labels in a 2x2 grid
-label_cable_current_area.place(x=20, y=420)
+# 현재 케이블 면적 라벨
+label_cable2 = Label(win)
+label_cable2.config(text = "현재 케이블 면적: ")
+label_cable2.place(x=20, y=420)
+# label_cable2.pack()
 
+# 현재 케이블 면적 값
+value_cable2 = Label(win)
+value_cable2.config(text = "측정 전")
+value_cable2.place(x=120, y=420)
+def show_mask_area(current_mask_area):
+    value_cable2.config(text = current_mask_area)
+# value_cable2.pack()
 
-label_cable_current_area_value = tk.Label(root, text="측정 전")
-# Grid the labels in a 2x2 grid
-label_cable_current_area_value.place(x=120, y=420)
+# m01 라벨
+label_m01 = Label(win)
+label_m01.config(text = "m01_value: ")
+label_m01.place(x=20, y=460)
+# label_m01.pack()
 
-def show_current_mask_area(current_mask_area):
-    # text_cma = current_mask_area, round(cable_area_base/current_mask_area*100, 2)
-    label_cable_current_area_value = tk.Label(root, text=current_mask_area)
-    # Grid the labels in a 2x2 grid
-    label_cable_current_area_value.place(x=120, y=420)
-# 현재 케이블 면척 출력 끝
+# m01 값
+value_m01 = Label(win)
+value_m01.config(text = "측정 전")
+value_m01.place(x=120, y=460)
+def show_m01_value(m01_value):
+    value_m01.config(text = m01_value)
+# value_m01.pack()
 
+# m53 라벨
+label_m53 = Label(win)
+label_m53.config(text = "m53_value: ")
+label_m53.place(x=20, y=480)
+# label_m53.pack()
 
-#리셋버튼 값 체크 및 표시 시작
-# Create three labels
-m53_value_label = tk.Label(root, text="m53_value: ")
-m54_value_label = tk.Label(root, text="m54_value: ")
-m01_value_label = tk.Label(root, text="m01_value: ")
-# Grid the labels in a 2x2 grid
-m53_value_label.place(x=20, y=460)
-m54_value_label.place(x=20, y=480)
-m01_value_label.place(x=20, y=500)
+# m53 값
+value_m53 = Label(win)
+value_m53.config(text = "측정 전")
+value_m53.place(x=120, y=480)
+def show_m53_value(m53_value):
+    value_m53.config(text = m53_value)
+# value_m53.pack()
+
+# m54 라벨
+label_m54 = Label(win)
+label_m54.config(text = "m54_value: ")
+label_m54.place(x=20, y=500)
+# label_m54.pack()
+
+# m54 값
+value_m54 = Label(win)
+value_m54.config(text = "측정 전")
+value_m54.place(x=120, y=500)
+def show_m54_value(m54_value):
+    value_m54.config(text = m54_value)
+# value_m54.pack()
 
 def start_btn_check():
     try:
@@ -168,14 +202,9 @@ def start_btn_check():
     except:
         # logging.error(traceback.format_exc())
         pass
-    # Create three labels
-    m53_value_label = tk.Label(root, text=m53)
-    m54_value_label = tk.Label(root, text=m54)
-    m01_value_label = tk.Label(root, text=m01)
-    # Grid the labels in a 2x2 grid
-    m53_value_label.place(x=120, y=460)
-    m54_value_label.place(x=120, y=480)
-    m01_value_label.place(x=120, y=500)
+    show_m01_value(m01)
+    show_m53_value(m53)
+    show_m54_value(m54)
 #리셋버튼 값 체크 및 표시 끝
 
 ######  tkinter  end   ######
@@ -188,8 +217,8 @@ def startbtn():
         client = ModbusTcpClient('192.168.0.20' ,502)
     result_m01 = client.read_coils(0x01)
 
-    show_area_value("준비 중")
-    show_current_mask_area("준비 중")
+    show_area_base("준비 중")
+    show_mask_area("준비 중")
     if result_m01.bits[0] : # 1(True) 이면
         client.write_coils(0x01,0)
     else:
@@ -207,7 +236,8 @@ def manual_reset():
     client.write_coils(0x54,0)
 
     # 화면에 현재 cable area 표시
-    show_current_mask_area("준비 중")
+    show_area_base("준비 중")
+    show_mask_area("준비 중")
 
 #manual_reset 끝
 
@@ -251,7 +281,6 @@ def check_start():
         m53m, m54m = m53, m54
         # print("   ", i," :화면 전송만 실행")
         # print(" m53: " + str(m53) + " m54: " + str(m54) + " m53m: " + str(m53m) + " m54m: " + str(m54m))
-        show_area_value("준비 중")
         show_camera()
 
     # 방금 Start 버튼이 눌렸으면
@@ -360,7 +389,7 @@ def mask_area_base_set():
     # 케이블 기준 area 값 설정
     global cable_area_base
     cable_area_base = int(np.mean(masks))
-    show_area_value(cable_area_base)
+    show_area_base(cable_area_base)
 
     # 케이블 기준 area 값 DB저장 시작
     # insert 'cable_area_base'
@@ -399,10 +428,26 @@ def show_camera():
                     photos.append(ImageTk.PhotoImage(image=cap_imgs[i]))
 
                     # Displaying photoimage in the label 
-                    label_widgets[i].photo_image = photos[i]
+                    # label_cameras[i].photo_image = photos[i]
                     
                     # Configure image in the label 
-                    label_widgets[i].configure(image=photos[i])
+                    # label_cameras[i].configure(image=photos[i])
+
+                    if i == 0:
+                        label_camera1.photo_image = photos[i]
+                        label_camera1.configure(image=photos[i])
+                        # show_camera1(photos[i])
+                    elif i == 1:
+                        label_camera2.photo_image = photos[i]
+                        label_camera2.configure(image=photos[i])
+                        # show_camera2(photos[i])
+                    elif i == 2:
+                        label_camera3.photo_image = photos[i]
+                        label_camera3.configure(image=photos[i])
+                        # show_camera3(photos[i])
+
+
+
             except Exception as e:
                 print(f"===========ERROR==========: {e}")
                 traceback.print_exc(file=sys.stdout)
@@ -410,7 +455,7 @@ def show_camera():
                 continue
                 
         # Repeat the same process after every 10 milliseconds
-        label_widgets[0].after(1, check_start)
+        label_camera1.after(30, check_start)
                 ######  tkinter  end   ###### 
 
 
@@ -492,11 +537,24 @@ def detect_camera():
                     photos.append(ImageTk.PhotoImage(image=cap_imgs[i]))
 
                     # Displaying photoimage in the label 
-                    label_widgets[i].photo_image = photos[i]
+                    # label_cameras[i].photo_image = photos[i]
                     
                     # Configure image in the label 
-                    label_widgets[i].configure(image=photos[i])
-                    
+                    # label_cameras[i].configure(image=photos[i])
+
+                    if i == 0:
+                        label_camera1.photo_image = photos[i]
+                        label_camera1.configure(image=photos[i])
+                        # show_camera1(photos[i])
+                    elif i == 1:
+                        label_camera2.photo_image = photos[i]
+                        label_camera2.configure(image=photos[i])
+                        # show_camera2(photos[i])
+                    elif i == 2:
+                        label_camera3.photo_image = photos[i]
+                        label_camera3.configure(image=photos[i])
+                        # show_camera3(photos[i])
+
                     #### mask area start ####
 
                     # Detact 된 항목중 Class가 0 ("cable") 인 항목을 찾기
@@ -623,7 +681,7 @@ def detect_camera():
 
         # 화면에 현재 cable area 표시
         if len(masks) > 2:
-            show_current_mask_area(int(np.mean(masks)))
+            show_mask_area(int(np.mean(masks)))
 
         # Mask Area에 값이 있으면 mean_masks에 append
         if len(masks) > 2:
@@ -640,7 +698,7 @@ def detect_camera():
 
         
         # Repeat the same process after every 10 milliseconds
-        label_widgets[0].after(1, check_start)
+        label_camera1.after(30, check_start)
 
                 ######  tkinter  end   ######
   
@@ -661,31 +719,31 @@ def stop_cam():
 ######  tkinter  start   ######
 
 # Create a button to open the camera in GUI app 
-btn_open = Button(root, text="Start Camera", command=start_cam) 
+btn_open = Button(win, text="Start Camera", command=start_cam) 
 # btn_open.grid(row=0,column=0) 
 # btn_open.pack()
 btn_open.place(x=2, y=2)
 
 # Create a button to close the camera in GUI app 
-btn_stop = Button(root, text="Stop Camera", command=stop_cam) 
+btn_stop = Button(win, text="Stop Camera", command=stop_cam) 
 # btn_open.grid(row=0,column=0) 
 # btn_close.pack()
 btn_stop.place(x=92, y=2)
 
 # Create a button to close the camera in GUI app 
-btn_close = Button(root, text="Close Program", command=root.destroy) 
+btn_close = Button(win, text="Close Program", command=win.destroy) 
 # btn_open.grid(row=0,column=0) 
 # btn_close.pack()
 btn_close.place(x=182, y=2)
 
 # Create a button to open the camera in GUI app 
-btn_open = Button(root, text="Start Button", command=startbtn) 
+btn_open = Button(win, text="Start Button", command=startbtn) 
 # btn_open.grid(row=0,column=0) 
 # btn_open.pack()
 btn_open.place(x=840, y=450)
 
 # Create a button to open the camera in GUI app 
-btn_open = Button(root, text="Reset Start button", command=manual_reset) 
+btn_open = Button(win, text="Reset Start button", command=manual_reset) 
 # btn_open.grid(row=0,column=0) 
 # btn_open.pack()
 btn_open.place(x=840, y=490)
@@ -694,7 +752,7 @@ btn_open.place(x=840, y=490)
 # Auto start
 start_cam()
 # Create an infinite loop for displaying app on screen 
-root.mainloop() 
+win.mainloop() 
 
 # Release resources
 try: 
