@@ -66,3 +66,4 @@ https://github.com/basler/pypylon/blob/master/samples/opencv.py
 
 
 
+디스플레이 화면 1280 * 800
