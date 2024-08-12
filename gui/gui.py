@@ -404,8 +404,8 @@ def mask_area_base_set():
                         masks.append(mask_count)
                     #### mask area end ####
             except Exception as e:
-                print(f"===========ERROR==========: {e}")
-                traceback.print_exc(file=sys.stdout)
+                # print(f"===========ERROR==========: {e}")
+                # traceback.print_exc(file=sys.stdout)
                 logging.error(traceback.format_exc())
                 continue
 
@@ -475,13 +475,13 @@ def show_camera():
 
 
                 except Exception as e:
-                    print(f"===========ERROR==========: {e}")
-                    traceback.print_exc(file=sys.stdout)
+                    # print(f"===========ERROR==========: {e}")
+                    # traceback.print_exc(file=sys.stdout)
                     logging.error(traceback.format_exc())
                     continue
         except Exception as e:
-            print(f"===========ERROR==========: {e}")
-            traceback.print_exc(file=sys.stdout)
+            # print(f"===========ERROR==========: {e}")
+            # traceback.print_exc(file=sys.stdout)
             logging.error(traceback.format_exc())
             
             win.destroy()
@@ -533,8 +533,8 @@ def detect_camera():
         s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
 
     except Exception as e:
-        print(f"===========ERROR==========: {e}")
-        traceback.print_exc(file=sys.stdout)
+        # print(f"===========ERROR==========: {e}")
+        # traceback.print_exc(file=sys.stdout)
         logging.error(traceback.format_exc())
         pass
 
@@ -709,8 +709,8 @@ def detect_camera():
 
                         #### mask area end ####
                 except Exception as e:
-                    print(f"===========ERROR==========: {e}")
-                    traceback.print_exc(file=sys.stdout)
+                    # print(f"===========ERROR==========: {e}")
+                    # traceback.print_exc(file=sys.stdout)
                     continue
 
 
@@ -742,8 +742,8 @@ def detect_camera():
                     ######  tkinter  end   ######
 
         except Exception as e:
-            print(f"===========ERROR==========: {e}")
-            traceback.print_exc(file=sys.stdout)
+            # print(f"===========ERROR==========: {e}")
+            # traceback.print_exc(file=sys.stdout)
             logging.error(traceback.format_exc())
             
             win.destroy()
