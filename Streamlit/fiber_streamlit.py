@@ -29,7 +29,8 @@ def fetch_data(start_date, end_date, db_folder):
                 type,
                 CAST(material_number AS TEXT) AS material_number,
                 area,
-                image
+                image,
+                d_time
             FROM detection
             WHERE s_time BETWEEN ? AND ?
             ORDER BY s_time DESC, seq2 DESC
@@ -157,14 +158,14 @@ else:
             col.write(val)
         # 버튼 추가
         button_col = cols[-1]
-        if button_col.button(f'이미지 보기 ({row["s_time"]} {row["seq2"]})', key=f'button_{i}'):
+        if button_col.button(f'이미지 보기 ({row["d_time"]})', key=f'button_{i}'):
             try:
                 image_path = os.path.join(image_folder, row["image"])
                 origin_image_path = os.path.join(origin_folder, os.path.basename(row["image"]))
                 
                 st.session_state['image_url'] = image_path
                 st.session_state['origin_image_url'] = origin_image_path
-                st.session_state['image_pk'] = f'{row["s_time"]} {row["seq2"]}'
+                st.session_state['image_pk'] = f'{row["d_time"]}'
                 st.session_state['image_load_error'] = False
             except Exception as e:
                 st.session_state['image_load_error'] = True
