@@ -25,11 +25,10 @@ def fetch_data(start_date, end_date, db_folder):
             query = """
             SELECT distinct s_time, 
                 seq2,
-                d_meter
+                d_meter,
                 type,
                 CAST(material_number AS TEXT) AS material_number,
                 area,
-                d_time,
                 image
             FROM detection
             WHERE s_time BETWEEN ? AND ?
@@ -141,8 +140,8 @@ st.markdown("""
 st.markdown('<div class="dataframe-container">', unsafe_allow_html=True)
 
 # 항목명 추가 (불량이미지 항목을 히든으로 처리)
-column_names = ["시작시간", "순번", "발견지점","유형", "제품번호", "넓이", "탐지시간", "불량품이미지"]
-header_cols = st.columns([6, 2, 4, 3, 5, 3, 6, 17])  # 불량이미지 열 제외
+column_names = ["시작시간", "순번", "발견지점","유형", "제품번호", "넓이", "불량품이미지"]
+header_cols = st.columns([6, 2, 4, 3, 5, 3, 17])  # 불량이미지 열 제외
 
 for col, name in zip(header_cols, column_names):
     col.markdown(f"**{name}**")
@@ -153,7 +152,7 @@ if df.empty:
 else:
     # 데이터 출력 및 버튼 추가 (불량이미지 열은 제외)
     for i, row in df.iterrows():
-        cols = st.columns([6, 2, 4, 3, 5, 3, 6, 17])  # 불량이미지 열 제외, 버튼 열 추가
+        cols = st.columns([6, 2, 4, 3, 5, 3, 17])  # 불량이미지 열 제외, 버튼 열 추가
         for col, val in zip(cols[:-1], row[:-1]):  # 불량이미지 데이터는 제외
             col.write(val)
         # 버튼 추가
