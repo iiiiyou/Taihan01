@@ -174,4 +174,7 @@ yolo-seg_old/
 yolov8n_ncnn_model/
 SQL/fiber.db
 fiber.db
-.db*.db
+*.db
+.db
+SQL/fiber.db/
+setting/
