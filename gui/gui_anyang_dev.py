@@ -21,9 +21,9 @@ import SQL.insert_sqllite_area as areadb
 from pymodbus.client import ModbusTcpClient
 from pymodbus.transaction import *
 import time
-# import logging
+import logging
 
-# logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
+logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
@@ -217,7 +217,7 @@ def start_btn_check():
         m01 = result_m01.bits[0]
         m04 = result_m04.bits[0]
     except:
-        # logging.error(traceback.format_exc())
+        logging.error(traceback.format_exc())
         pass
     show_m01_value(m01)
     show_m53_value(m53)
@@ -265,12 +265,12 @@ def makedirs(path):
         if not os.path.exists(path):
             os.makedirs(path)
     except OSError:
-        # logging.error(traceback.format_exc())
+        logging.error(traceback.format_exc())
         print("Error: Failed to create the directory.")
 # Make folder end #
 
 
-time1, time2,time3, time4 = 0, 0, 0, 0
+time1, time2,time3, time4,time5, time6 = 0, 0, 0, 0,0,0
 ######  Get m53, m54 Start   ######
 m01, m04, m53, m54, s_time, count = False, False, False, False, 0, 0
 # m53, m54 = False, False
@@ -406,7 +406,7 @@ def mask_area_base_set():
             except Exception as e:
                 print(f"===========ERROR==========: {e}")
                 traceback.print_exc(file=sys.stdout)
-                # logging.error(traceback.format_exc())
+                logging.error(traceback.format_exc())
                 continue
 
     # 케이블 기준 area 값 설정
@@ -414,6 +414,7 @@ def mask_area_base_set():
     if len(masks) > 1:
         cable_area_base = int(np.mean(masks))
         show_area_base(cable_area_base)
+        mean_masks.append(int(np.mean(masks)))
 
     # 케이블 기준 area 값 DB저장 시작
     # insert 'cable_area_base'
@@ -476,12 +477,12 @@ def show_camera():
                 except Exception as e:
                     print(f"===========ERROR==========: {e}")
                     traceback.print_exc(file=sys.stdout)
-                    # logging.error(traceback.format_exc())
+                    logging.error(traceback.format_exc())
                     continue
         except Exception as e:
             print(f"===========ERROR==========: {e}")
             traceback.print_exc(file=sys.stdout)
-            # logging.error(traceback.format_exc())
+            logging.error(traceback.format_exc())
             
             win.destroy()
             # pass
@@ -534,7 +535,7 @@ def detect_camera():
     except Exception as e:
         print(f"===========ERROR==========: {e}")
         traceback.print_exc(file=sys.stdout)
-        # logging.error(traceback.format_exc())
+        logging.error(traceback.format_exc())
         pass
 
 
@@ -624,6 +625,7 @@ def detect_camera():
                             time1 = int(date.get_time_in_mmddss())
 
                             if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 1):
+                                time2 = int(date.get_time_in_mmddss())
                                 detected_time = date.get_time_in_mmddss()
                                 detected_date = date.get_date_in_yyyymmdd()
                                 cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
@@ -655,7 +657,6 @@ def detect_camera():
 
                                 detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
                                 # time.sleep(1)
-                                time2 = int(date.get_time_in_mmddss())
 
                         # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
 
@@ -664,7 +665,7 @@ def detect_camera():
                         # # 면적이상 이벤트 코드 시작 #
                         # # 면적이상 이벤트 코드 시작 #
                         global time3, time4
-                        if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.2) and (len(cameras)==i+1):
+                        if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*0.8) and (len(cameras)==i+1):
                             time3 = int(date.get_time_in_mmddss())
                             # 불량 감지 코드 추가
                             # print("면적불량 감지 !!!")
@@ -673,6 +674,7 @@ def detect_camera():
                             # print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
                             if (time3-time4 > 1):
                                 for l in range(len(cameras)):
+                                    time4 = int(date.get_time_in_mmddss())
                                     # print(l)
                                     detected_time = date.get_time_in_mmddss()
                                     detected_date = date.get_date_in_yyyymmdd()
@@ -698,7 +700,6 @@ def detect_camera():
                                     image = "C:/image/"+detected_date+"/area_box/"+str(detected_time)+".jpg"
                                     
                                     detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
-                                time4 = int(date.get_time_in_mmddss())
                             # print("")
                         # # 면적이상 이벤트 코드 끝 #
                         # # 면적이상 이벤트 코드 끝 #
@@ -722,11 +723,15 @@ def detect_camera():
                 # mean_masks.append([date.get_time_in_all(), int(np.mean(masks))])
                 mean_masks.append(int(np.mean(masks)))
 
+            global time5, time6
             if len(mean_masks) >= 10:
-                areadb.write_sql(s_time, s_n, int(np.mean(mean_masks)))
-                # mean_masks.pop(0)
-                mean_masks.clear()
-                # print(len(mean_masks))
+                time5 = int(date.get_time_in_mmddss())
+                mean_masks.pop(0)
+                if(time5-time6 > 1):
+                    time6 = int(date.get_time_in_mmddss())
+                    areadb.write_sql(s_time, s_n, int(np.mean(mean_masks)))
+                    # print(len(mean_masks))
+                    # SQL
 
 
 
@@ -739,7 +744,7 @@ def detect_camera():
         except Exception as e:
             print(f"===========ERROR==========: {e}")
             traceback.print_exc(file=sys.stdout)
-            # logging.error(traceback.format_exc())
+            logging.error(traceback.format_exc())
             
             win.destroy()
 
