@@ -665,7 +665,7 @@ def detect_camera():
                         # # 면적이상 이벤트 코드 시작 #
                         # # 면적이상 이벤트 코드 시작 #
                         global time3, time4
-                        if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.2) and (len(cameras)==i+1):
+                        if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.1) and (len(cameras)==i+1):
                             time3 = int(date.get_time_in_mmddss())
                             # 불량 감지 코드 추가
                             # print("면적불량 감지 !!!")
