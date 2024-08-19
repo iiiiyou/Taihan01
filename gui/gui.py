@@ -651,11 +651,11 @@ def detect_camera():
                                 type = "defect"
 
                                 # 이미지 저장 위치
-                                image = "C:/image/"+detected_date+"/box/"+str(d_time)+".jpg"
+                                image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
                                 # area = 123
                                 area = int(mean_masks[len(mean_masks)-1])
 
-                                detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                                detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
                                 # time.sleep(1)
 
                         # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입

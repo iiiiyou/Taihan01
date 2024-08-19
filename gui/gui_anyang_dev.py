@@ -27,7 +27,7 @@ logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
-imgsize, confidence = 640, 0.00
+imgsize, confidence = 640, 0.80
 # 케이블 면적 기준 값
 cable_area_base = 0
 
@@ -404,8 +404,8 @@ def mask_area_base_set():
                         masks.append(mask_count)
                     #### mask area end ####
             except Exception as e:
-                print(f"===========ERROR==========: {e}")
-                traceback.print_exc(file=sys.stdout)
+                # print(f"===========ERROR==========: {e}")
+                # traceback.print_exc(file=sys.stdout)
                 logging.error(traceback.format_exc())
                 continue
 
@@ -475,13 +475,13 @@ def show_camera():
 
 
                 except Exception as e:
-                    print(f"===========ERROR==========: {e}")
-                    traceback.print_exc(file=sys.stdout)
+                    # print(f"===========ERROR==========: {e}")
+                    # traceback.print_exc(file=sys.stdout)
                     logging.error(traceback.format_exc())
                     continue
         except Exception as e:
-            print(f"===========ERROR==========: {e}")
-            traceback.print_exc(file=sys.stdout)
+            # print(f"===========ERROR==========: {e}")
+            # traceback.print_exc(file=sys.stdout)
             logging.error(traceback.format_exc())
             
             win.destroy()
@@ -533,8 +533,8 @@ def detect_camera():
         s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
 
     except Exception as e:
-        print(f"===========ERROR==========: {e}")
-        traceback.print_exc(file=sys.stdout)
+        # print(f"===========ERROR==========: {e}")
+        # traceback.print_exc(file=sys.stdout)
         logging.error(traceback.format_exc())
         pass
 
@@ -648,14 +648,14 @@ def detect_camera():
                                 d_feet = d5000_ft.registers[0]
                                 
                                 # 오류 유형
-                                type = "detect"
+                                type = "defect"
 
                                 # 이미지 저장 위치
-                                image = "C:/image/"+detected_date+"/box/"+str(d_time)+".jpg"
+                                image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
                                 # area = 123
                                 area = int(mean_masks[len(mean_masks)-1])
 
-                                detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                                detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
                                 # time.sleep(1)
 
                         # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
@@ -665,7 +665,7 @@ def detect_camera():
                         # # 면적이상 이벤트 코드 시작 #
                         # # 면적이상 이벤트 코드 시작 #
                         global time3, time4
-                        if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*0.8) and (len(cameras)==i+1):
+                        if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.30) and (len(cameras)==i+1):
                             time3 = int(date.get_time_in_mmddss())
                             # 불량 감지 코드 추가
                             # print("면적불량 감지 !!!")
@@ -709,8 +709,8 @@ def detect_camera():
 
                         #### mask area end ####
                 except Exception as e:
-                    print(f"===========ERROR==========: {e}")
-                    traceback.print_exc(file=sys.stdout)
+                    # print(f"===========ERROR==========: {e}")
+                    # traceback.print_exc(file=sys.stdout)
                     continue
 
 
@@ -742,8 +742,8 @@ def detect_camera():
                     ######  tkinter  end   ######
 
         except Exception as e:
-            print(f"===========ERROR==========: {e}")
-            traceback.print_exc(file=sys.stdout)
+            # print(f"===========ERROR==========: {e}")
+            # traceback.print_exc(file=sys.stdout)
             logging.error(traceback.format_exc())
             
             win.destroy()
