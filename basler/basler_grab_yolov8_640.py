@@ -12,7 +12,7 @@ sys.path.append('C:/source')
 import util.format_date_time as date
 
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/taihanfiber_2-1_best.pt')
+model = YOLO('C:/source/models/taihanfiber_3-1_best.pt')
 # model = YOLO('yolov8s-seg.pt')
 
 
@@ -46,13 +46,13 @@ camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
 
 for x in pylon.TlFactory.GetInstance().EnumerateDevices():
     print(x.GetSerialNumber())
-    if x.GetSerialNumber() == "24985755":   # Upside
+    if x.GetSerialNumber() == "25002688":   # Upside A-24985755, 25002688
         print (x.GetIpAddress())
         camera1 = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(x))
-    elif x.GetSerialNumber() == "25002690": # Right
+    elif x.GetSerialNumber() == "25002689": # Right A-25002690, 25002689
         print (x.GetIpAddress())
         camera2 = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(x))
-    elif x.GetSerialNumber() == "25002686": # Left
+    elif x.GetSerialNumber() == "25002687": # Left A-25002686, 25002687
         print (x.GetIpAddress())
         camera3 = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateDevice(x))
 
