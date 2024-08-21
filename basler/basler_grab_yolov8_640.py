@@ -85,7 +85,7 @@ while camera1.IsGrabbing() & camera2.IsGrabbing() & camera3.IsGrabbing():
     grabResult2 = camera2.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
     grabResult3 = camera3.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
 
-    imgsize, confidence = 640, 0.50
+    imgsize, confidence = 640, 0.80
     if grabResult1.GrabSucceeded() and grabResult2.GrabSucceeded() and grabResult3.GrabSucceeded():
         # Access the image data
 
@@ -130,13 +130,7 @@ while camera1.IsGrabbing() & camera2.IsGrabbing() & camera3.IsGrabbing():
         results3 = model.predict(img3r, save=False, imgsz=imgsize, conf=confidence)
         # Visualize the results on the frame
         annotated_img3 = results3[0].plot()
-
-        # Run YOLOv8 inference on the frame
-        # results3 = model(img3)
-        results3 = model.predict(img3r, save=False, imgsz=640, conf=0.50)
-        # Visualize the results on the frame
-        annotated_img3 = results3[0].plot()
-        
+      
         # black_line = np.zeros((1, 640, 3), np.uint8)
         # purple_line = np.full((1, 640, 3), (255, 0, 255), dtype=np.uint8)
         # img = np.concatenate((img1, purple_line, img2, purple_line, img3), axis=0)
