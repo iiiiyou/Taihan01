@@ -12,7 +12,7 @@ sys.path.append('C:/source')
 import util.format_date_time as date
 
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/taihanfiber_3-1_best.pt')
+model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
 # model = YOLO('yolov8s-seg.pt')
 
 
