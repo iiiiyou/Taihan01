@@ -12,7 +12,8 @@ sys.path.append('C:/source')
 import util.format_date_time as date
 
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
+# model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
+model = YOLO('C:/source/models/taihanfiber_5-1_best_t2.pt')
 # model = YOLO('yolov8s-seg.pt')
 
 
@@ -137,23 +138,23 @@ while camera1.IsGrabbing() & camera2.IsGrabbing() & camera3.IsGrabbing():
 
         # cv2.namedWindow('title', cv2.WINDOW_AUTOSIZE)
         # cv2.imshow('title', img)
-        cv2.imshow('title1', annotated_img1)
-        cv2.imshow('title2', annotated_img2)
-        cv2.imshow('title3', annotated_img3)
+        cv2.imshow('title1', cv2.resize(annotated_img1, (330,330)))
+        cv2.imshow('title2', cv2.resize(annotated_img2, (330,330)))
+        cv2.imshow('title3', cv2.resize(annotated_img3, (330,330)))
         k = cv2.waitKey(1)
         # 캡쳐
         if k == ord('c'):
             catpure = cv2.imread('C:/source/ultralytics/capture.png')
-            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Upside_original.jpg', img1r)
-            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Right_original.jpg', img2r)
-            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Left_original.jpg', img3r)
-            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Upside_annotated.jpg', annotated_img1)
-            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Right_annotated.jpg', annotated_img2)
-            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Left_annotated.jpg', annotated_img3)            
+            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Camera1_original.jpg', img1r)
+            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Camera2_original.jpg', img2r)
+            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Camera3_original.jpg', img3r)
+            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Camera1_annotated.jpg', annotated_img1)
+            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Camera2_annotated.jpg', annotated_img2)
+            cv2.imwrite('images/capture/640_'+date.get_time_in_mmddss()+'_Camera3_annotated.jpg', annotated_img3)            
 
-            cv2.imshow('title1', catpure)
-            cv2.imshow('title2', catpure)
-            cv2.imshow('title3', catpure)
+            cv2.imshow('title1', cv2.resize(catpure, (330,330)))
+            cv2.imshow('title2', cv2.resize(catpure, (330,330)))
+            cv2.imshow('title3', cv2.resize(catpure, (330,330)))
             cv2.waitKey(150)
 
         if k == 27:
