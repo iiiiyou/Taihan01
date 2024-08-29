@@ -622,10 +622,10 @@ def detect_camera():
                         global time1, time2
 
                         if int(results[i][0].boxes.cls[d_num]) == 1:
-                            time1 = int(date.get_time_in_mmddss())
+                            time1 = int(date.get_date_time())
 
                             if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 1):
-                                time2 = int(date.get_time_in_mmddss())
+                                time2 = int(date.get_date_time())
                                 detected_time = date.get_time_in_mmddss()
                                 detected_date = date.get_date_in_yyyymmdd()
                                 cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
@@ -666,7 +666,7 @@ def detect_camera():
                         # # 면적이상 이벤트 코드 시작 #
                         global time3, time4
                         if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.30) and (len(cameras)==i+1):
-                            time3 = int(date.get_time_in_mmddss())
+                            time3 = int(date.get_date_time())
                             # 불량 감지 코드 추가
                             # print("면적불량 감지 !!!")
                             # print("카메라 숫자: ", len(cameras))
@@ -674,7 +674,7 @@ def detect_camera():
                             # print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
                             if (time3-time4 > 1):
                                 for l in range(len(cameras)):
-                                    time4 = int(date.get_time_in_mmddss())
+                                    time4 = int(date.get_date_time())
                                     # print(l)
                                     detected_time = date.get_time_in_mmddss()
                                     detected_date = date.get_date_in_yyyymmdd()
@@ -725,10 +725,10 @@ def detect_camera():
 
             global time5, time6
             if len(mean_masks) >= 10:
-                time5 = int(date.get_time_in_mmddss())
+                time5 = int(date.get_date_time())
                 mean_masks.pop(0)
                 if(time5-time6 > 1):
-                    time6 = int(date.get_time_in_mmddss())
+                    time6 = int(date.get_date_time())
                     areadb.write_sql(s_time, s_n, int(np.mean(mean_masks)))
                     # print(len(mean_masks))
                     # SQL
