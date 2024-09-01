@@ -310,7 +310,7 @@ def check_start():
     elif not((m53m == m53) & (m54m == m54)):
         count = 0
         # 면적 DB 보관할 폴더 있는지 확인 후 없으면 생성
-        path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'
+        path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'+date.get_date_in_yyyymmdd()+'/'
         makedirs(path)
 
         # 시작 시간 가져오기
