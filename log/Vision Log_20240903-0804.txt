@@ -1,0 +1,290 @@
+
+  You can now view your Streamlit app in your browser.
+
+  Local URL: http://localhost:8502
+  Network URL: http://10.30.60.52:8502
+
+2024-09-02 18:47:08.900 Uncaught app exception
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 331, in AgGrid
+    component_value = _component_func(
+                      ^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 58, in __call__
+    return self.create_instance(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\metrics_util.py", line 408, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 230, in create_instance
+    dg._enqueue("component_instance", element.component_instance)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 462, in _enqueue
+    _enqueue_message(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 736, in _enqueue_message
+    ctx.enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_run_context.py", line 160, in enqueue
+    self._enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 340, in _enqueue_forward_msg
+    self._maybe_handle_execution_control_request()
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _maybe_handle_execution_control_request
+    raise StopException()
+streamlit.runtime.scriptrunner.exceptions.StopException
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 85, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 576, in code_to_exec
+    exec(code, module.__dict__)
+  File "C:\source\Streamlit\fiber_streamlit.py", line 172, in <module>
+    grid_response = AgGrid(
+                    ^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 348, in AgGrid
+    except components.components.MarshallComponentException as ex:
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'streamlit.components.v1' has no attribute 'components'
+2024-09-02 18:55:45.829 Uncaught app exception
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 331, in AgGrid
+    component_value = _component_func(
+                      ^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 58, in __call__
+    return self.create_instance(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\metrics_util.py", line 408, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 230, in create_instance
+    dg._enqueue("component_instance", element.component_instance)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 462, in _enqueue
+    _enqueue_message(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 736, in _enqueue_message
+    ctx.enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_run_context.py", line 160, in enqueue
+    self._enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 340, in _enqueue_forward_msg
+    self._maybe_handle_execution_control_request()
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _maybe_handle_execution_control_request
+    raise StopException()
+streamlit.runtime.scriptrunner.exceptions.StopException
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 85, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 576, in code_to_exec
+    exec(code, module.__dict__)
+  File "C:\source\Streamlit\fiber_streamlit.py", line 172, in <module>
+    grid_response = AgGrid(
+                    ^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 348, in AgGrid
+    except components.components.MarshallComponentException as ex:
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'streamlit.components.v1' has no attribute 'components'
+2024-09-02 18:57:27.521 Uncaught app exception
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 331, in AgGrid
+    component_value = _component_func(
+                      ^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 58, in __call__
+    return self.create_instance(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\metrics_util.py", line 408, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 230, in create_instance
+    dg._enqueue("component_instance", element.component_instance)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 462, in _enqueue
+    _enqueue_message(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 736, in _enqueue_message
+    ctx.enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_run_context.py", line 160, in enqueue
+    self._enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 340, in _enqueue_forward_msg
+    self._maybe_handle_execution_control_request()
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _maybe_handle_execution_control_request
+    raise StopException()
+streamlit.runtime.scriptrunner.exceptions.StopException
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 85, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 576, in code_to_exec
+    exec(code, module.__dict__)
+  File "C:\source\Streamlit\fiber_streamlit.py", line 172, in <module>
+    grid_response = AgGrid(
+                    ^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 348, in AgGrid
+    except components.components.MarshallComponentException as ex:
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'streamlit.components.v1' has no attribute 'components'
+2024-09-02 18:57:47.957 Uncaught app exception
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 331, in AgGrid
+    component_value = _component_func(
+                      ^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 58, in __call__
+    return self.create_instance(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\metrics_util.py", line 408, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 230, in create_instance
+    dg._enqueue("component_instance", element.component_instance)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 462, in _enqueue
+    _enqueue_message(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 736, in _enqueue_message
+    ctx.enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_run_context.py", line 160, in enqueue
+    self._enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 340, in _enqueue_forward_msg
+    self._maybe_handle_execution_control_request()
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _maybe_handle_execution_control_request
+    raise StopException()
+streamlit.runtime.scriptrunner.exceptions.StopException
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 85, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 576, in code_to_exec
+    exec(code, module.__dict__)
+  File "C:\source\Streamlit\fiber_streamlit.py", line 172, in <module>
+    grid_response = AgGrid(
+                    ^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 348, in AgGrid
+    except components.components.MarshallComponentException as ex:
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'streamlit.components.v1' has no attribute 'components'
+2024-09-02 18:58:57.897 Uncaught app exception
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 331, in AgGrid
+    component_value = _component_func(
+                      ^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 58, in __call__
+    return self.create_instance(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\metrics_util.py", line 408, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 230, in create_instance
+    dg._enqueue("component_instance", element.component_instance)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 462, in _enqueue
+    _enqueue_message(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 736, in _enqueue_message
+    ctx.enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_run_context.py", line 160, in enqueue
+    self._enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 340, in _enqueue_forward_msg
+    self._maybe_handle_execution_control_request()
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _maybe_handle_execution_control_request
+    raise StopException()
+streamlit.runtime.scriptrunner.exceptions.StopException
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 85, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 576, in code_to_exec
+    exec(code, module.__dict__)
+  File "C:\source\Streamlit\fiber_streamlit.py", line 172, in <module>
+    grid_response = AgGrid(
+                    ^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 348, in AgGrid
+    except components.components.MarshallComponentException as ex:
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'streamlit.components.v1' has no attribute 'components'
+2024-09-02 19:14:05.591 Uncaught app exception
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 331, in AgGrid
+    component_value = _component_func(
+                      ^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 58, in __call__
+    return self.create_instance(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\metrics_util.py", line 408, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 230, in create_instance
+    dg._enqueue("component_instance", element.component_instance)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 462, in _enqueue
+    _enqueue_message(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\delta_generator.py", line 736, in _enqueue_message
+    ctx.enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_run_context.py", line 160, in enqueue
+    self._enqueue(msg)
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 340, in _enqueue_forward_msg
+    self._maybe_handle_execution_control_request()
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _maybe_handle_execution_control_request
+    raise StopException()
+streamlit.runtime.scriptrunner.exceptions.StopException
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 85, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 576, in code_to_exec
+    exec(code, module.__dict__)
+  File "C:\source\Streamlit\fiber_streamlit.py", line 172, in <module>
+    grid_response = AgGrid(
+                    ^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 348, in AgGrid
+    except components.components.MarshallComponentException as ex:
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'streamlit.components.v1' has no attribute 'components'
+2024-09-02 19:14:06.308 Uncaught app exception
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 331, in AgGrid
+    component_value = _component_func(
+                      ^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 58, in __call__
+    return self.create_instance(
+           ^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\metrics_util.py", line 408, in wrapped_func
+    result = non_optional_func(*args, **kwargs)
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 228, in create_instance
+    return_value = marshall_component(dg, element)
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\components\v1\custom_component.py", line 202, in marshall_component
+    component_state = register_widget(
+                      ^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\state\widgets.py", line 169, in register_widget
+    return register_widget_from_metadata(metadata, ctx, widget_func_name, element_type)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\state\widgets.py", line 222, in register_widget_from_metadata
+    return ctx.session_state.register_widget(metadata, user_key)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\state\safe_session_state.py", line 55, in register_widget
+    self._yield_callback()
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 379, in _maybe_handle_execution_control_request
+    raise StopException()
+streamlit.runtime.scriptrunner.exceptions.StopException
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\exec_code.py", line 85, in exec_func_with_error_handling
+    result = func()
+             ^^^^^^
+  File "C:\source\taihan\Lib\site-packages\streamlit\runtime\scriptrunner\script_runner.py", line 576, in code_to_exec
+    exec(code, module.__dict__)
+  File "C:\source\Streamlit\fiber_streamlit.py", line 172, in <module>
+    grid_response = AgGrid(
+                    ^^^^^^^
+  File "C:\source\taihan\Lib\site-packages\st_aggrid\__init__.py", line 348, in AgGrid
+    except components.components.MarshallComponentException as ex:
+           ^^^^^^^^^^^^^^^^^^^^^
+AttributeError: module 'streamlit.components.v1' has no attribute 'components'
