@@ -90,9 +90,9 @@ while camera1.IsGrabbing() & camera2.IsGrabbing() & camera3.IsGrabbing():
         black_screen = np.zeros((640, 640, 3), np.uint8)
         catpure = cv2.imread('C:/source/ultralytics/capture.png')
         # cv2.namedWindow('title1', cv2.WINDOW_AUTOSIZE)
-        cv2.imshow('title1', img1r)
-        cv2.imshow('title2', img2r)
-        cv2.imshow('title3', img3r)
+        cv2.imshow('title1', cv2.resize(img1r, (330,330)))
+        cv2.imshow('title2', cv2.resize(img2r, (330,330)))
+        cv2.imshow('title3', cv2.resize(img3r, (330,330)))
 
         k = cv2.waitKey(1)
         # 캡쳐
