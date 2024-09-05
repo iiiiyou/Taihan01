@@ -14,7 +14,7 @@ st.set_page_config(layout="wide")
 def clean_string(s):
     return ''.join(i for i in s if ord(i) >= 32 and ord(i) < 127)
 
-@st.cache_data
+# @st.cache_data(ttl=60)
 def fetch_data(start_date, end_date, db_folder):
     data = []
     col_names = None
