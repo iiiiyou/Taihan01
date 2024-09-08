@@ -675,18 +675,13 @@ def detect_camera():
 
                         # Run YOLOv8 inference on the frame
                         # results1 = model(img1)
-                        # results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
-                        results.append(model.track(images[i], persist=True, tracker="bytetrack.yaml", save=False, imgsz=imgsize, conf=confidence))
+                        results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
 
                         # # Replace class names with custom labels in the results
                         # for result in results[i]:
                         #     for cls_id, custom_label in class_mapping.items():
                         #         if cls_id in result.names: # check if the class id is in the results
                         #             result.names[cls_id] = custom_label # replace the class name with the custom label
-
-                        # tracking id 추가
-                        for result in results[i]:
-                            id = format_id(result.boxes.id)
 
                         # Visualize the results on the frame
                         annotated_imgs.append(cv2.resize(results[i][0].plot(), (330,330)))
@@ -749,16 +744,14 @@ def detect_camera():
 
 
                         # Defect가 감지 됐을 때
-                        global time1, time2, previous_id
+                        global time1, time2
 
                         if (int(results[i][0].boxes.cls[d_num]) == 1):
                             time1 = int(date.get_time_millisec())
 
                             # 20240908 현재 생산된 회전수가 기억된 회전수보다 클때 조건 추가
-                            # 20240908 tracking id 가 추가되었을때 조건 추가
-                            if int(results[i][0].boxes.cls[d_num]) == 1 & (is_id_increased(id)) and (current_cnt > mem_cnt):
+                            if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 500000) and (current_cnt > mem_cnt):
                                 time2 = int(date.get_time_millisec())
-                                previous_id = id
                                 detected_time = date.get_time_in_mmddss()
                                 detected_date = date.get_date_in_yyyymmdd()
                                 count = count + 1

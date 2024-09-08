@@ -2,7 +2,7 @@ import time
 from pymodbus.client import ModbusTcpClient
 from pymodbus.transaction import *
 
-client = ModbusTcpClient('192.168.0.20' ,502)
+client = ModbusTcpClient('192.168.102.20' ,502)
 
 result_n0_1_2  = client.read_holding_registers(0x0000)    # D0  0x0000 제품번호
 result_n0_3_4  = client.read_holding_registers(0x0001)
@@ -12,15 +12,19 @@ result_cnt    = client.read_holding_registers(0x0004)      # D4  총회전 카�
 
 result_err_cnt= client.read_holding_registers(0x0008)      # D8 ERROR카운터 배열로 사용
 
-result_m      = client.read_holding_registers(0x0028)     # D40 0x0028 현길이[m] 
+result_m      = client.read_holding_registers(0x0028)     # D40 0x0028 현길이[m]
+result_d40 = client.read_holding_registers(40)    # D40 현재 미터수
+result_m04 = client.read_coils(0x04)
 
-print(result_n0_1_2.registers[0])
-print(result_n0_3_4.registers[0])
-print(result_n0_5.registers[0])
+print("제품번호0: ", result_n0_1_2.registers[0])
+print("제품번호1: ", result_n0_3_4.registers[0])
+print("제품번호2: ", result_n0_5.registers[0])
 
-print(result_err_cnt.registers[0])
-print(result_cnt.registers[0])
-print(result_m.registers[0])
+print("DB Error 카운터 배열로 사용: ", result_err_cnt.registers[0])
+print("D4 총회전 카운터: ", result_cnt.registers[0])
+print("현길이[m]: ", result_m.registers[0])
+print("현길이2[m]: ", result_d40.registers[0])
+print("물리적 start버튼 상태: ", result_m04.bits[0])
 
 
 err_cnt_array = int(result_err_cnt.registers[0])
@@ -32,9 +36,9 @@ for i in range(1,err_cnt_array+1):
    cm_cm = i + 300
    d200_m = client.read_holding_registers(m_m)
    d300_cm = client.read_holding_registers(cm_cm)
-   print(d200_m.registers[0])
-   print(d300_cm.registers[0])
-   print(i,'번째:',d200_m.registers[0],'.',d300_cm.registers[0],'[m]')
+   # print(d200_m.registers[0])
+   # print(d300_cm.registers[0])
+   # print(i,'번째:',d200_m.registers[0],'.',d300_cm.registers[0],'[m]')
 
 
 
