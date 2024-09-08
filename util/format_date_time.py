@@ -25,6 +25,11 @@ def get_time_in_all():
   now = datetime.datetime.now()
   return now.strftime("%Y-%m-%d %H:%M:%S.%f")
 
+def get_time_millisec():
+  """Returns the current time in mmddss format."""
+  now = datetime.datetime.now()
+  return now.strftime("%Y%m%d%H%M%S%f")
+
 def format_time(time):
     """Returns the current time in mmddss format."""
     now = datetime.datetime.now()
@@ -36,6 +41,11 @@ def get_date_time():
 
 if __name__ == "__main__":
     print(get_date_in_yyyymmdd())
-    print(get_time_in_mmddss())  
+    print(get_date_in_yyyymm()) 
+    print(format_date())
+    print(get_time_in_mmddss()) 
+    print(get_time_in_all()) 
+    print(get_time_millisec()) 
+    # print(format_time(time)) 
     print(get_date_time())
     print(int(get_date_time()))

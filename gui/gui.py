@@ -780,8 +780,8 @@ def detect_camera():
                                 area = int(mean_masks[len(mean_masks)-1])
 
                                 for l in range(len(cameras)):
-                                    cv2.imwrite('C:/image/'+detected_date+'/box/'+ l + '_' + detected_time+'.jpg', results[i][0].plot())
-                                    cv2.imwrite('C:/image/'+detected_date+'/Original/'+ l + '_' + detected_time+'.jpg', images[i])
+                                    cv2.imwrite('C:/image/'+detected_date+'/box/'+ str(l) + '_' + detected_time+'.jpg', results[i][0].plot())
+                                    cv2.imwrite('C:/image/'+detected_date+'/Original/'+ str(l) + '_' + detected_time+'.jpg', images[i])
                                     
                                     # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
 
@@ -789,7 +789,7 @@ def detect_camera():
                                     type = "defect"
 
                                     # 이미지 저장 위치
-                                    image = "C:/image/"+detected_date+"/box/"+ l + '_' + str(detected_time)+".jpg"
+                                    image = "C:/image/"+detected_date+"/box/"+ str(l) + '_' + str(detected_time)+".jpg"
 
                                     detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
                                     # time.sleep(1)
@@ -839,12 +839,12 @@ def detect_camera():
                                 area = int(mean_masks[len(mean_masks)-1])
                                 
                                 for l in range(len(cameras)):
-                                    # print(l)
-                                    cv2.imwrite('C:/image/'+detected_date+'/area_box/'+ l + '_' + detected_time+'.jpg', results[l][0].plot())
-                                    cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+ l + '_' + detected_time+'.jpg', images[l])
+                                    print(l)
+                                    cv2.imwrite('C:/image/'+detected_date+'/area_box/'+ str(l) + '_' + detected_time+'.jpg', results[l][0].plot())
+                                    cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+ str(l)+ '_' + detected_time+'.jpg', images[l])
                                     
                                     # 이미지 저장 위치
-                                    image = "C:/image/"+detected_date+"/area_box/"+ l + '_' + str(detected_time)+".jpg"
+                                    image = "C:/image/"+detected_date+"/area_box/"+ str(l) + '_' + str(detected_time)+".jpg"
                                     
                                     detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
                             # print("")
