@@ -756,7 +756,7 @@ def detect_camera():
 
                             # 20240908 현재 생산된 회전수가 기억된 회전수보다 클때 조건 추가
                             # 20240908 tracking id 가 추가되었을때 조건 추가
-                            if int(results[i][0].boxes.cls[d_num]) == 1 & (is_id_increased(id)) and (current_cnt > mem_cnt):
+                            if int(results[i][0].boxes.cls[d_num]) == 1 & (is_id_increased(id)):# and (current_cnt > mem_cnt):
                                 time2 = int(date.get_time_millisec())
                                 previous_id = id
                                 detected_time = date.get_time_in_mmddss()
@@ -814,7 +814,7 @@ def detect_camera():
                             # print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
                             
                             # 20240908 현재 생산된 회전수가 기억된 회전수보다 클때 조건 추가
-                            if (time3-time4 > 500000) and (current_cnt > mem_cnt):
+                            if (time3-time4 > 500000):# and (current_cnt > mem_cnt):
                                 time4 = int(date.get_time_millisec())
                                 detected_time = date.get_time_in_mmddss()
                                 detected_date = date.get_date_in_yyyymmdd()
@@ -874,7 +874,7 @@ def detect_camera():
             if len(mean_masks) >= 10:
                 time5 = int(date.get_date_time())
                 mean_masks.pop(0)
-                if(time5-time6 > 1) and (current_cnt > mem_cnt):
+                if(time5-time6 > 1):# and (current_cnt > mem_cnt):
                     time6 = int(date.get_date_time())
                     # meter, 회전수 메모리 변수 값을 현재 값으로 변경
                     mem_meter = current_meter

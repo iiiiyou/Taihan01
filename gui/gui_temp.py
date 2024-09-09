@@ -750,7 +750,7 @@ def detect_camera():
                             time1 = int(date.get_time_millisec())
 
                             # 20240908 현재 생산된 회전수가 기억된 회전수보다 클때 조건 추가
-                            if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 500000) and (current_cnt > mem_cnt):
+                            if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 500000):# and (current_cnt > mem_cnt):
                                 time2 = int(date.get_time_millisec())
                                 detected_time = date.get_time_in_mmddss()
                                 detected_date = date.get_date_in_yyyymmdd()
@@ -773,8 +773,8 @@ def detect_camera():
                                 area = int(mean_masks[len(mean_masks)-1])
 
                                 for l in range(len(cameras)):
-                                    cv2.imwrite('C:/image/'+detected_date+'/box/'+ l + '_' + detected_time+'.jpg', results[i][0].plot())
-                                    cv2.imwrite('C:/image/'+detected_date+'/Original/'+ l + '_' + detected_time+'.jpg', images[i])
+                                    cv2.imwrite('C:/image/'+detected_date+'/box/'+ str(l) + '_' + detected_time+'.jpg', results[i][0].plot())
+                                    cv2.imwrite('C:/image/'+detected_date+'/Original/'+ str(l) + '_' + detected_time+'.jpg', images[i])
                                     
                                     # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
 
@@ -782,7 +782,7 @@ def detect_camera():
                                     type = "defect"
 
                                     # 이미지 저장 위치
-                                    image = "C:/image/"+detected_date+"/box/"+ l + '_' + str(detected_time)+".jpg"
+                                    image = "C:/image/"+detected_date+"/box/"+ str(l) + '_' + str(detected_time)+".jpg"
 
                                     detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
                                     # time.sleep(1)
@@ -807,7 +807,7 @@ def detect_camera():
                             # print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
                             
                             # 20240908 현재 생산된 회전수가 기억된 회전수보다 클때 조건 추가
-                            if (time3-time4 > 500000) and (current_cnt > mem_cnt):
+                            if (time3-time4 > 500000):# and (current_cnt > mem_cnt):
                                 time4 = int(date.get_time_millisec())
                                 detected_time = date.get_time_in_mmddss()
                                 detected_date = date.get_date_in_yyyymmdd()
@@ -832,12 +832,12 @@ def detect_camera():
                                 area = int(mean_masks[len(mean_masks)-1])
                                 
                                 for l in range(len(cameras)):
-                                    # print(l)
-                                    cv2.imwrite('C:/image/'+detected_date+'/area_box/'+ l + '_' + detected_time+'.jpg', results[l][0].plot())
-                                    cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+ l + '_' + detected_time+'.jpg', images[l])
+                                    print(l)
+                                    cv2.imwrite('C:/image/'+detected_date+'/area_box/'+ str(l) + '_' + detected_time+'.jpg', results[l][0].plot())
+                                    cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+ str(l)+ '_' + detected_time+'.jpg', images[l])
                                     
                                     # 이미지 저장 위치
-                                    image = "C:/image/"+detected_date+"/area_box/"+ l + '_' + str(detected_time)+".jpg"
+                                    image = "C:/image/"+detected_date+"/area_box/"+ str(l) + '_' + str(detected_time)+".jpg"
                                     
                                     detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
                             # print("")
@@ -867,7 +867,7 @@ def detect_camera():
             if len(mean_masks) >= 10:
                 time5 = int(date.get_date_time())
                 mean_masks.pop(0)
-                if(time5-time6 > 1) and (current_cnt > mem_cnt):
+                if(time5-time6 > 1):# and (current_cnt > mem_cnt):
                     time6 = int(date.get_date_time())
                     # meter, 회전수 메모리 변수 값을 현재 값으로 변경
                     mem_meter = current_meter
