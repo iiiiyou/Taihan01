@@ -7,7 +7,7 @@ from pymodbus.transaction import *
 client = ModbusTcpClient('192.168.102.20' ,502)
 
 client.write_coils(0x0020,1)
-result_m20 = client.read_coils(0x0020)f
+result_m20 = client.read_coils(0x0020)
 print(result_m20.bits[0]) 
 
 

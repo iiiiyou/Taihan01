@@ -42,8 +42,8 @@ def format_id(id):
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/taihanfiber_4-1_best_anyang.pt')
-# model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
+# model = YOLO('C:/source/models/taihanfiber_4-1_best_anyang.pt')
+model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
 imgsize, confidence = 640, 0.70
 # 케이블 면적 기준 값
 cable_area_base = 0
@@ -374,7 +374,7 @@ def makedirs(path):
 
 time1, time2, time3, time4, time5, time6 = 0, 0, 0, 0, 0, 0
 ######  Get cur_m53, cur_m54 Start   ######
-m01, m04, cur_m53, cur_m54, s_time, count = False, False, False, False, 0, 0
+m01, m04, cur_m53, cur_m54, s_time, count, mmddhhnnss = False, False, False, False, 0, 0, 0
 # cur_m53, cur_m54 = False, False
 mem_m53, mem_m54 = cur_m53, cur_m54
 # count = 0
@@ -388,7 +388,7 @@ mem_meter, mem_cnt = 0, 0
 ######  Start button status check start   ######
 def check_start():
     #20240908 생산중 확인 위해 현재_meter, 현재_cnt 추가
-    global m04, mem_m53, mem_m54, s_time, count, mem_meter, mem_cnt
+    global m04, mem_m53, mem_m54, s_time, count, mem_meter, mem_cnt, mmddhhnnss
     start_btn_check()
     
     # resetbtn()
@@ -416,14 +416,34 @@ def check_start():
         count = 0
         #20240908 생산중 확인 위해 현재_meter, 현재_cnt 추가
         mem_meter, mem_cnt = 0, 0
+        
         # 면적 DB 보관할 폴더 있는지 확인 후 없으면 생성
         path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'+date.get_date_in_yyyymmdd()+'/'
         makedirs(path)
 
         # 시작 시간 가져오기
-        s_time = int(date.get_date_time())
-        show_stime(s_time)
-
+        # s_time = int(date.get_date_time())
+        
+        # 제품 시작시간 가져오기
+        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
+        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
+        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
+        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
+        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
+        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
+        yyyy = result_d632.registers[0]
+        mm = result_d621.registers[0]
+        dd = result_d622.registers[0]
+        hh = result_d623.registers[0]
+        nn = result_d624.registers[0]
+        ss = result_d625.registers[0]
+        mm = str(mm).zfill(2)
+        dd = str(dd).zfill(2)
+        hh = str(hh).zfill(2)
+        nn = str(nn).zfill(2)
+        ss = str(ss).zfill(2)
+        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
+        show_stime(mmddhhnnss)
 
         # print("   ", i," :50 프레임 이후 50프레임 평균 으로 밝기 측정, Exposure Time 변경")
         exposure_change()
@@ -431,7 +451,7 @@ def check_start():
         mask_area_base_set()
         
         #SQL insert (시작시간)
-        start.write_sql3(s_time, cable_area_base)
+        start.write_sql3(mmddhhnnss, cable_area_base)
         
         # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
         detect_camera()
@@ -605,7 +625,7 @@ def show_camera():
 
 def detect_camera():
     #20240908 생산중 확인 위해 현재_meter, 현재_cnt 추가
-    global s_time, count, client, mem_meter, mem_cnt
+    global s_time, count, client, mem_meter, mem_cnt, mmddhhnnss
     grabResults = []
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
@@ -644,6 +664,7 @@ def detect_camera():
         c9  = (ed & 0x00ff)
         c10 = ed >> 8
         s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
+        s_n1 = chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
         show_sn(s_n)
         #20240908 생산중 확인 위해 현재_meter 추가
         result_d40 = client.read_holding_registers(40)    # D40 현재 미터수
@@ -675,18 +696,13 @@ def detect_camera():
 
                         # Run YOLOv8 inference on the frame
                         # results1 = model(img1)
-                        # results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
-                        results.append(model.track(images[i], persist=True, tracker="bytetrack.yaml", save=False, imgsz=imgsize, conf=confidence))
+                        results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
 
                         # # Replace class names with custom labels in the results
                         # for result in results[i]:
                         #     for cls_id, custom_label in class_mapping.items():
                         #         if cls_id in result.names: # check if the class id is in the results
                         #             result.names[cls_id] = custom_label # replace the class name with the custom label
-
-                        # tracking id 추가
-                        for result in results[i]:
-                            id = format_id(result.boxes.id)
 
                         # Visualize the results on the frame
                         annotated_imgs.append(cv2.resize(results[i][0].plot(), (330,330)))
@@ -749,16 +765,14 @@ def detect_camera():
 
 
                         # Defect가 감지 됐을 때
-                        global time1, time2, previous_id
+                        global time1, time2
 
                         if (int(results[i][0].boxes.cls[d_num]) == 1):
                             time1 = int(date.get_time_millisec())
 
                             # 20240908 현재 생산된 회전수가 기억된 회전수보다 클때 조건 추가
-                            # 20240908 tracking id 가 추가되었을때 조건 추가
-                            if int(results[i][0].boxes.cls[d_num]) == 1 & (is_id_increased(id)):# and (current_cnt > mem_cnt):
+                            if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 500000):# and (current_cnt > mem_cnt):
                                 time2 = int(date.get_time_millisec())
-                                previous_id = id
                                 detected_time = date.get_time_in_mmddss()
                                 detected_date = date.get_date_in_yyyymmdd()
                                 count = count + 1
@@ -770,8 +784,13 @@ def detect_camera():
                                 # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
                                 client.write_coils(0x0020,1)
                                 client.write_coils(0x0020,0)
-                                m_m = count + 1000
-                                ft_ft = count + 5000
+
+                                # 제품 에러 수 가져오기
+                                result_err_cnt= client.read_holding_registers(0x0008)
+                                err_cnt_array = int(result_err_cnt.registers[0])
+                                
+                                m_m = err_cnt_array + 1000
+                                ft_ft = err_cnt_array + 5000
                                 d1000_m  = client.read_holding_registers(m_m)
                                 d5000_ft = client.read_holding_registers(ft_ft)
                                 d_meter = d1000_m.registers[0]
@@ -779,19 +798,20 @@ def detect_camera():
                                 # area = 123
                                 area = int(mean_masks[len(mean_masks)-1])
 
+                                # 오류 유형
+                                type = "defect"
+                                
+                                cv2.imwrite('C:/image/'+detected_date+'/box/'+ str(i) + '_' + detected_time+'.jpg', results[i][0].plot())
+
                                 for l in range(len(cameras)):
-                                    cv2.imwrite('C:/image/'+detected_date+'/box/'+ str(l) + '_' + detected_time+'.jpg', results[i][0].plot())
-                                    cv2.imwrite('C:/image/'+detected_date+'/Original/'+ str(l) + '_' + detected_time+'.jpg', images[i])
+                                    cv2.imwrite('C:/image/'+detected_date+'/Original/'+ str(l) + '_' + detected_time+'.jpg', images[l])
                                     
                                     # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
 
-                                    # 오류 유형
-                                    type = "defect"
+                                # 이미지 저장 위치
+                                image = "C:/image/"+detected_date+"/box/"+ str(i) + '_' + str(detected_time)+".jpg"
 
-                                    # 이미지 저장 위치
-                                    image = "C:/image/"+detected_date+"/box/"+ str(l) + '_' + str(detected_time)+".jpg"
-
-                                    detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
+                                detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, detected_time, image, area)
                                     # time.sleep(1)
 
                         # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
@@ -827,8 +847,13 @@ def detect_camera():
                                 # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
                                 client.write_coils(0x0020,1)
                                 client.write_coils(0x0020,0)
-                                m_m = count + 1000
-                                ft_ft = count + 5000
+                                
+                                # 제품 에러 수 가져오기
+                                result_err_cnt= client.read_holding_registers(0x0008)
+                                err_cnt_array = int(result_err_cnt.registers[0])
+
+                                m_m = err_cnt_array + 1000
+                                ft_ft = err_cnt_array + 5000
                                 d1000_m  = client.read_holding_registers(m_m)
                                 d5000_ft = client.read_holding_registers(ft_ft)
                                 d_meter = d1000_m.registers[0]
@@ -838,15 +863,16 @@ def detect_camera():
                                 
                                 area = int(mean_masks[len(mean_masks)-1])
                                 
+                                cv2.imwrite('C:/image/'+detected_date+'/area_box/'+ str(i) + '_' + detected_time+'.jpg', results[i][0].plot())
+                                
                                 for l in range(len(cameras)):
                                     print(l)
-                                    cv2.imwrite('C:/image/'+detected_date+'/area_box/'+ str(l) + '_' + detected_time+'.jpg', results[l][0].plot())
                                     cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+ str(l)+ '_' + detected_time+'.jpg', images[l])
                                     
                                     # 이미지 저장 위치
-                                    image = "C:/image/"+detected_date+"/area_box/"+ str(l) + '_' + str(detected_time)+".jpg"
+                                image = "C:/image/"+detected_date+"/area_box/"+ str(i) + '_' + str(detected_time)+".jpg"
                                     
-                                    detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
+                                detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, detected_time, image, area)
                             # print("")
                         # # 면적이상 이벤트 코드 끝 #
                         # # 면적이상 이벤트 코드 끝 #
@@ -879,7 +905,7 @@ def detect_camera():
                     # meter, 회전수 메모리 변수 값을 현재 값으로 변경
                     mem_meter = current_meter
                     mem_cnt = current_cnt
-                    areadb.write_sql(s_time, s_n, int(np.mean(mean_masks)))
+                    areadb.write_sql(mmddhhnnss, s_n, int(np.mean(mean_masks)))
                     # print(len(mean_masks))
                     # SQL
             

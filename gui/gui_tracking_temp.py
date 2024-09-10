@@ -42,8 +42,8 @@ def format_id(id):
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/taihanfiber_4-1_best_anyang.pt')
-# model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
+# model = YOLO('C:/source/models/taihanfiber_4-1_best_anyang.pt')
+model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
 imgsize, confidence = 640, 0.70
 # 케이블 면적 기준 값
 cable_area_base = 0
@@ -780,8 +780,8 @@ def detect_camera():
                                 area = int(mean_masks[len(mean_masks)-1])
 
                                 for l in range(len(cameras)):
-                                    cv2.imwrite('C:/image/'+detected_date+'/box/'+ str(l) + '_' + detected_time+'.jpg', results[i][0].plot())
-                                    cv2.imwrite('C:/image/'+detected_date+'/Original/'+ str(l) + '_' + detected_time+'.jpg', images[i])
+                                    cv2.imwrite('C:/image/'+detected_date+'/box/'+ str(l) + '_' + detected_time+'.jpg', results[l][0].plot())
+                                    cv2.imwrite('C:/image/'+detected_date+'/Original/'+ str(l) + '_' + detected_time+'.jpg', images[l])
                                     
                                     # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
 
