@@ -23,37 +23,21 @@ from pymodbus.transaction import *
 import time
 import logging
 
-## 20240908 id Tracking 추가 시작 ##
-previous_id = 0
-
-def is_id_increased(id):
-    if id > previous_id:
-        return True
-    else:
-        return False
-
-def format_id(id):
-    if id is not None:
-        return int(max((id).numpy()))
-    else:
-        return 0
-## 20240908 id Tracking 추가 끝 ##
-
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-# model = YOLO('C:/source/models/taihanfiber_4-1_best_anyang.pt')
+# model = YOLO('C:/source/models/taihanfiber_5-1_best_t2.pt')
 model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
 imgsize, confidence = 640, 0.70
 # 케이블 면적 기준 값
 cable_area_base = 0
 
 client = ModbusTcpClient('192.168.102.20' ,502)
-# # Define a class mapping dictionary
-# class_mapping = {
-#     1: 'Defect', # The key is the class id, you may need to adjust according to your model
-#     # Add more mappings as needed
-# }
+# Define a class mapping dictionary
+class_mapping = {
+    1: 'Defect', # The key is the class id, you may need to adjust according to your model
+    # Add more mappings as needed
+}
 
 tlf = pylon.TlFactory.GetInstance()
 devices = tlf.EnumerateDevices()
@@ -138,10 +122,9 @@ label_cable1.place(x=20, y=400)
 
 # 케이블 기준 면적 값
 value_cable1= Label(win)
-value_cable1.config(text = "측정 전", font=("Consolas", 10))
+value_cable1.config(text = "측정 전")
 value_cable1.place(x=120, y=400)
 def show_area_base(mask_area_base):
-    mask_area_base = f"{mask_area_base:,}"
     value_cable1.config(text = mask_area_base)
 # value_cable1.pack()
 
@@ -153,16 +136,10 @@ label_cable2.place(x=20, y=420)
 
 # 현재 케이블 면적 값
 value_cable2 = Label(win)
-value_cable2.config(text = "측정 전", font=("Consolas", 10))
+value_cable2.config(text = "측정 전")
 value_cable2.place(x=120, y=420)
 def show_mask_area(current_mask_area):
-    # 2024-09-08 면적 비율 추가
-    area_ratio = current_mask_area / cable_area_base * 100
-    area_ratio = f"{area_ratio:.2f}"
-    # area_ratio = str(area_ratio).zfill(6)
-    area_ratio = str(area_ratio).rjust(6)
-    area_ratio = f"{current_mask_area:,} ({area_ratio} %)"
-    value_cable2.config(text = area_ratio)
+    value_cable2.config(text = current_mask_area)
 # value_cable2.pack()
 
 # m01 라벨
@@ -173,157 +150,79 @@ label_m01.place(x=20, y=460)
 
 # m01 값
 value_m01 = Label(win)
-value_m01.config(text = "측정 전", font=("Consolas", 10))
+value_m01.config(text = "측정 전")
 value_m01.place(x=120, y=460)
 def show_m01_value(m01_value):
     value_m01.config(text = m01_value)
 # value_m01.pack()
 
-# cur_m53 라벨
-label_cur_m53 = Label(win)
-label_cur_m53.config(text = "cur_m53_value: ")
-label_cur_m53.place(x=20, y=480)
-# label_cur_m53.pack()
+# m53 라벨
+label_m53 = Label(win)
+label_m53.config(text = "m53_value: ")
+label_m53.place(x=20, y=480)
+# label_m53.pack()
 
-# cur_m53 값
-value_cur_m53 = Label(win)
-value_cur_m53.config(text = "측정 전", font=("Consolas", 10))
-value_cur_m53.place(x=120, y=480)
-def show_cur_m53_value(cur_m53_value):
-    value_cur_m53.config(text = cur_m53_value)
-# value_cur_m53.pack()
+# m53 값
+value_m53 = Label(win)
+value_m53.config(text = "측정 전")
+value_m53.place(x=120, y=480)
+def show_m53_value(m53_value):
+    value_m53.config(text = m53_value)
+# value_m53.pack()
 
-# cur_m54 라벨
-label_cur_m54 = Label(win)
-label_cur_m54.config(text = "cur_m54_value: ")
-label_cur_m54.place(x=20, y=500)
-# label_cur_m54.pack()
+# m54 라벨
+label_m54 = Label(win)
+label_m54.config(text = "m54_value: ")
+label_m54.place(x=20, y=500)
+# label_m54.pack()
 
-# cur_m54 값
-value_cur_m54 = Label(win)
-value_cur_m54.config(text = "측정 전", font=("Consolas", 10))
-value_cur_m54.place(x=120, y=500)
-def show_cur_m54_value(cur_m54_value):
-    value_cur_m54.config(text = cur_m54_value)
-# value_cur_m54.pack()
+# m54 값
+value_m54 = Label(win)
+value_m54.config(text = "측정 전")
+value_m54.place(x=120, y=500)
+def show_m54_value(m54_value):
+    value_m54.config(text = m54_value)
+# value_m54.pack()
 
 # m04 라벨
 label_m04 = Label(win)
 label_m04.config(text = "m04_value: ")
 label_m04.place(x=20, y=520)
-# label_m04.pack()
+# label_m54.pack()
 
-# m04 값
+# m54 값
 value_m04 = Label(win)
-value_m04.config(text = "측정 전", font=("Consolas", 10))
+value_m04.config(text = "측정 전")
 value_m04.place(x=120, y=520)
 def show_m04_value(m04_value):
     value_m04.config(text = m04_value)
-# value_m04.pack()
-
-# 2024-09-08 추가
-# ===============================================
-# 생산 시작 시간 라벨
-label_stime = Label(win)
-label_stime.config(text = "시작시간: ")
-label_stime.place(x=320, y=400)
-# label_cable1.pack()
-
-# 생산 시작 시간 값
-value_stime= Label(win)
-value_stime.config(text = "측정 전", font=("Consolas", 10))
-value_stime.place(x=420, y=400)
-def show_stime(stime_value):
-    value_stime.config(text = stime_value)
-# value_stime.pack()
-
-# 제품번호(sn) 라벨
-label_sn = Label(win)
-label_sn.config(text = "제품번호: ")
-label_sn.place(x=320, y=420)
-# label_cable1.pack()
-
-# 제품번호(sn) 값
-value_sn= Label(win)
-value_sn.config(text = "측정 전", font=("Consolas", 10))
-value_sn.place(x=420, y=420)
-def show_sn(sn_value):
-    value_sn.config(text = sn_value)
-# value_stime.pack()
-
-# 현재 케이블 생산 meter 라벨
-label_meter = Label(win)
-label_meter.config(text = "케이블 생산미터: ")
-label_meter.place(x=320, y=440)
-# label_cable2.pack()
-
-# 현재 케이블 생산 meter 값
-value_meter = Label(win)
-value_meter.config(text = "측정 전", font=("Consolas", 10))
-value_meter.place(x=420, y=440)
-def show_meter(meter_value):
-    meter_value = f"{meter_value:,} 미터"
-    value_meter.config(text = meter_value)
-# value_cable2.pack()
-
-# 현재 케이블 생산 feet 라벨
-label_feet = Label(win)
-label_feet.config(text = "케이블 생산피트: ")
-label_feet.place(x=320, y=460)
-# label_cable2.pack()
-
-# 현재 케이블 생산 feet 값
-value_feet = Label(win)
-value_feet.config(text = "측정 전", font=("Consolas", 10))
-value_feet.place(x=420, y=460)
-def show_feet(feet_value):
-    feet_value = f"{feet_value:,.0f} 피트"
-    value_feet.config(text = feet_value)
-# value_cable2.pack()
-
-# cnt 라벨
-label_cnt = Label(win)
-label_cnt.config(text = "케이블 생산회전: ")
-label_cnt.place(x=320, y=480)
-# label_cnt.pack()
-
-# cnt 값
-value_cnt = Label(win)
-value_cnt.config(text = "측정 전", font=("Consolas", 10))
-value_cnt.place(x=420, y=480)
-def show_cnt(cnt_value):
-    cnt_value = f"{cnt_value:,} 회전"
-    value_cnt.config(text = cnt_value)
-# value_cnt.pack()
-
-
-# ===============================================
+# value_m54.pack()
 
 
 def start_btn_check():
     try:
-        global m01, m04, cur_m53, cur_m54, mem_m53, mem_m54, s_time, count, client
+        global m01, m04, m53, m54, m53m, m54m, s_time, count, client
         if not(client.connected):
             client = ModbusTcpClient('192.168.102.20' ,502)
-        result_cur_m53 = client.read_coils(0x53)
-        result_cur_m54 = client.read_coils(0x54)
+        result_m53 = client.read_coils(0x53)
+        result_m54 = client.read_coils(0x54)
         result_m01 = client.read_coils(0x01)
         result_m04 = client.read_coils(0x04)
-        # print("type(result_cur_m53.bits[0]): ", type(result_cur_m53.bits[0]))
-        # print("result_cur_m53.bits[0]: ", result_cur_m53.bits[0])
-        # print("type(result_cur_m54.bits[0]): ", type(result_cur_m54.bits[0]))
-        # print("result_cur_m54.bits[0]: ", result_cur_m54.bits[0])
-        # print("type(cur_m53): ", type(cur_m53))
-        # print("type(cur_m54): ", type(cur_m54))
-        cur_m53, cur_m54 = result_cur_m53.bits[0], result_cur_m54.bits[0]
+        # print("type(result_m53.bits[0]): ", type(result_m53.bits[0]))
+        # print("result_m53.bits[0]: ", result_m53.bits[0])
+        # print("type(result_m54.bits[0]): ", type(result_m54.bits[0]))
+        # print("result_m54.bits[0]: ", result_m54.bits[0])
+        # print("type(m53): ", type(m53))
+        # print("type(m54): ", type(m54))
+        m53, m54 = result_m53.bits[0], result_m54.bits[0]
         m01 = result_m01.bits[0]
         m04 = result_m04.bits[0]
     except:
         logging.error(traceback.format_exc())
         pass
     show_m01_value(m01)
-    show_cur_m53_value(cur_m53)
-    show_cur_m54_value(cur_m54)
+    show_m53_value(m53)
+    show_m54_value(m54)
     show_m04_value(m04)
 #리셋버튼 값 체크 및 표시 끝
 
@@ -332,7 +231,7 @@ def start_btn_check():
 
 #Start 버튼 수동 실행 시작
 def startbtn():
-    global m01, cur_m53, cur_m54, mem_m53, mem_m54, s_time, count, client
+    global m01, m53, m54, m53m, m54m, s_time, count, client
     if not(client.connected):
         client = ModbusTcpClient('192.168.102.20' ,502)
     result_m01 = client.read_coils(0x01)
@@ -348,7 +247,7 @@ def startbtn():
 
 #manual_reset 시작
 def manual_reset():
-    global m01, cur_m53, cur_m54, mem_m53, mem_m54, s_time, count, client
+    global m01, m53, m54, m53m, m54m, s_time, count, client
     if not(client.connected):
         client = ModbusTcpClient('192.168.102.20' ,502)
     client.write_coils(0x01,0)
@@ -372,39 +271,36 @@ def makedirs(path):
 # Make folder end #
 
 
-time1, time2, time3, time4, time5, time6 = 0, 0, 0, 0, 0, 0
-######  Get cur_m53, cur_m54 Start   ######
-m01, m04, cur_m53, cur_m54, s_time, count, mmddhhnnss = False, False, False, False, 0, 0, 0
-# cur_m53, cur_m54 = False, False
-mem_m53, mem_m54 = cur_m53, cur_m54
+time1, time2,time3, time4,time5, time6 = 0, 0, 0, 0,0,0
+######  Get m53, m54 Start   ######
+m01, m04, m53, m54, s_time, count = False, False, False, False, 0, 0
+# m53, m54 = False, False
+m53m, m54m = m53, m54
 # count = 0
 # s_time = 0
 getm = 0
-#20240908 생산중 확인 위해 현재_meter, 현재_cnt 추가
-mem_meter, mem_cnt = 0, 0
 
 
 
 ######  Start button status check start   ######
 def check_start():
-    #20240908 생산중 확인 위해 현재_meter, 현재_cnt 추가
-    global m04, mem_m53, mem_m54, s_time, count, mem_meter, mem_cnt, mmddhhnnss
+    global m04, m53m, m54m, s_time, count
     start_btn_check()
     
     # resetbtn()
 
     # get_m()
 
-    # 컴퓨터 키고, 광통신 start 버튼 안눌렀을때 -> cur_m53, cur_m54 = False, False
-    # 광통신 start 버튼 처음 누름              -> cur_m53, cur_m54 = True, False
-    # 광통신 start 버튼 두번째 누름            -> cur_m53, cur_m54 = False, True
+    # 컴퓨터 키고, 광통신 start 버튼 안눌렀을때 -> m53, M54 = False, False
+    # 광통신 start 버튼 처음 누름              -> m53, M54 = True, False
+    # 광통신 start 버튼 두번째 누름            -> m53, M54 = False, True
 
 
     # 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태이면
-    if cur_m53 == False and cur_m54 == False:
-        mem_m53, mem_m54 = cur_m53, cur_m54
+    if m53 == False and m54 == False:
+        m53m, m54m = m53, m54
         # print("   ", i," :화면 전송만 실행")
-        # print(" cur_m53: " + str(cur_m53) + " cur_m54: " + str(cur_m54) + " mem_m53: " + str(mem_m53) + " mem_m54: " + str(mem_m54))
+        # print(" m53: " + str(m53) + " m54: " + str(m54) + " m53m: " + str(m53m) + " m54m: " + str(m54m))
         show_camera()
     
     # 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태이면
@@ -412,50 +308,27 @@ def check_start():
         show_camera()
 
     # 방금 Start 버튼이 눌렸으면
-    elif not((mem_m53 == cur_m53) & (mem_m54 == cur_m54)):
+    elif not((m53m == m53) & (m54m == m54)):
         count = 0
-        #20240908 생산중 확인 위해 현재_meter, 현재_cnt 추가
-        mem_meter, mem_cnt = 0, 0
-        
         # 면적 DB 보관할 폴더 있는지 확인 후 없으면 생성
         path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'+date.get_date_in_yyyymmdd()+'/'
         makedirs(path)
 
         # 시작 시간 가져오기
-        # s_time = int(date.get_date_time())
-        
-        # 제품 시작시간 가져오기
-        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
-        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
-        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
-        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
-        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
-        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
-        yyyy = result_d632.registers[0]
-        mm = result_d621.registers[0]
-        dd = result_d622.registers[0]
-        hh = result_d623.registers[0]
-        nn = result_d624.registers[0]
-        ss = result_d625.registers[0]
-        mm = str(mm).zfill(2)
-        dd = str(dd).zfill(2)
-        hh = str(hh).zfill(2)
-        nn = str(nn).zfill(2)
-        ss = str(ss).zfill(2)
-        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
-        show_stime(mmddhhnnss)
+        s_time = int(date.get_date_time())
 
-        # print("   ", i," :50 프레임 이후 50프레임 평균 으로 밝기 측정, Exposure Time 변경")
+
+        # print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
         exposure_change()
         # print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
         mask_area_base_set()
         
         #SQL insert (시작시간)
-        start.write_sql3(mmddhhnnss, cable_area_base)
+        start.write_sql3(s_time, cable_area_base)
         
         # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
         detect_camera()
-        mem_m53, mem_m54 = cur_m53, cur_m54
+        m53m, m54m = m53, m54
     # Start 버튼 눌른 후 다음 Start 버튼 누르기 전인가?
     else:
         # print("   ", i," :Detact 실행")
@@ -464,17 +337,13 @@ def check_start():
 ######  Start button status check end   ######
 
 def exposure_change():
-    cams_bright_mean = []
-    #20240908 제품 시작 후 50프래임 이후 50개 수집하여 밝기 계산 코드 추가
-    for h in range (100):
+    grabResults, cams_bright_mean = [], []
+    for h in range (10):
         h = h + 1
         i = 0
-        grabResults = []
         for i in range(len(cameras)):
             grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-            
-            #20240908 제품 시작 후 50프래임 이후 50개 수집하여 밝기 계산 코드 추가
-            if grabResults[i].GrabSucceeded() & (h>50):
+            if grabResults[i].GrabSucceeded():
 
                 cams_bright_mean.append(np.mean(converter.Convert(grabResults[i]).GetArray()))
                 # print(np.mean(cams_bright_mean), cams_bright_mean)
@@ -516,11 +385,11 @@ def mask_area_base_set():
                     # results1 = model(img1)
                     results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
 
-                    # # Replace class names with custom labels in the results
-                    # for result in results[i]:
-                    #     for cls_id, custom_label in class_mapping.items():
-                    #         if cls_id in result.names: # check if the class id is in the results
-                    #             result.names[cls_id] = custom_label # replace the class name with the custom label
+                    # Replace class names with custom labels in the results
+                    for result in results[i]:
+                        for cls_id, custom_label in class_mapping.items():
+                            if cls_id in result.names: # check if the class id is in the results
+                                result.names[cls_id] = custom_label # replace the class name with the custom label
 
                     #### mask area start ####
                     # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
@@ -624,8 +493,7 @@ def show_camera():
 
 
 def detect_camera():
-    #20240908 생산중 확인 위해 현재_meter, 현재_cnt 추가
-    global s_time, count, client, mem_meter, mem_cnt, mmddhhnnss
+    global s_time, count, client
     grabResults = []
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
@@ -664,17 +532,6 @@ def detect_camera():
         c9  = (ed & 0x00ff)
         c10 = ed >> 8
         s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
-        s_n1 = chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
-        show_sn(s_n)
-        #20240908 생산중 확인 위해 현재_meter 추가
-        result_d40 = client.read_holding_registers(40)    # D40 현재 미터수
-        current_meter = result_d40.registers[0]
-        show_meter(current_meter)        
-        show_feet(current_meter*3.28084)
-        result_cnt = client.read_holding_registers(0x0004)  # D4  총회전 카운터
-        current_cnt = result_cnt.registers[0]
-        show_cnt(current_cnt)
-
 
     except Exception as e:
         # print(f"===========ERROR==========: {e}")
@@ -698,11 +555,11 @@ def detect_camera():
                         # results1 = model(img1)
                         results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
 
-                        # # Replace class names with custom labels in the results
-                        # for result in results[i]:
-                        #     for cls_id, custom_label in class_mapping.items():
-                        #         if cls_id in result.names: # check if the class id is in the results
-                        #             result.names[cls_id] = custom_label # replace the class name with the custom label
+                        # Replace class names with custom labels in the results
+                        for result in results[i]:
+                            for cls_id, custom_label in class_mapping.items():
+                                if cls_id in result.names: # check if the class id is in the results
+                                    result.names[cls_id] = custom_label # replace the class name with the custom label
 
                         # Visualize the results on the frame
                         annotated_imgs.append(cv2.resize(results[i][0].plot(), (330,330)))
@@ -756,63 +613,51 @@ def detect_camera():
                             
                         #### mask area end ####
 
-                        # Detact 된 항목중 Class가 1 ("defact") 인 항목을 찾기
+                        # Detact 된 항목중 Class가 0 ("defact") 인 항목을 찾기
                         d_num = 0
                         for k in range(len(results[i][0].boxes.cls)):
                             if int(results[i][0].boxes.cls[k]) == 1:
                                 d_num = k
                                 break
 
-
-                        # Defect가 감지 됐을 때
                         global time1, time2
 
-                        if (int(results[i][0].boxes.cls[d_num]) == 1):
+                        if int(results[i][0].boxes.cls[d_num]) == 1:
                             time1 = int(date.get_time_millisec())
 
-                            # 20240908 현재 생산된 회전수가 기억된 회전수보다 클때 조건 추가
-                            if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 500000):# and (current_cnt > mem_cnt):
+                            if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 500000):
                                 time2 = int(date.get_time_millisec())
                                 detected_time = date.get_time_in_mmddss()
                                 detected_date = date.get_date_in_yyyymmdd()
+                                cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
+                                cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'.jpg', images[i])
                                 count = count + 1
-                                
-                                # meter, 회전수 메모리 변수 값을 현재 값으로 변경
-                                mem_meter = current_meter
-                                mem_cnt = current_cnt
-                                
+
+                                # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
+
+                                # 감지 시간 저장
+                                d_time = int(detected_time)
+
                                 # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
                                 client.write_coils(0x0020,1)
                                 client.write_coils(0x0020,0)
-
-                                # 제품 에러 수 가져오기
-                                result_err_cnt= client.read_holding_registers(0x0008)
-                                err_cnt_array = int(result_err_cnt.registers[0])
-                                
-                                m_m = err_cnt_array + 1000
-                                ft_ft = err_cnt_array + 5000
+                                m_m = count + 1000
+                                ft_ft = count + 5000
                                 d1000_m  = client.read_holding_registers(m_m)
                                 d5000_ft = client.read_holding_registers(ft_ft)
                                 d_meter = d1000_m.registers[0]
                                 d_feet = d5000_ft.registers[0]
+                                
+                                # 오류 유형
+                                type = "defect"
+
+                                # 이미지 저장 위치
+                                image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
                                 # area = 123
                                 area = int(mean_masks[len(mean_masks)-1])
 
-                                # 오류 유형
-                                type = "defect"
-                                
-                                cv2.imwrite('C:/image/'+detected_date+'/box/'+ str(i) + '_' + detected_time+'.jpg', results[i][0].plot())
-
-                                for l in range(len(cameras)):
-                                    cv2.imwrite('C:/image/'+detected_date+'/Original/'+ str(l) + '_' + detected_time+'.jpg', images[l])
-                                    
-                                    # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
-
-                                # 이미지 저장 위치
-                                image = "C:/image/"+detected_date+"/box/"+ str(i) + '_' + str(detected_time)+".jpg"
-
-                                detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, detected_time, image, area)
-                                    # time.sleep(1)
+                                detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
+                                # time.sleep(1)
 
                         # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
 
@@ -820,59 +665,42 @@ def detect_camera():
                         # # 면적이상 이벤트 코드 시작 #
                         # # 면적이상 이벤트 코드 시작 #
                         # # 면적이상 이벤트 코드 시작 #
-
-                        
-                        # 면적이 기준면적보다 1.3배 클 때
                         global time3, time4
                         if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.30) and (len(cameras)==i+1):
                             time3 = int(date.get_time_millisec())
-
                             # 불량 감지 코드 추가
                             # print("면적불량 감지 !!!")
                             # print("카메라 숫자: ", len(cameras))
                             # print("masks 에 담긴 숫자: ", len(masks))
                             # print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
-                            
-                            # 20240908 현재 생산된 회전수가 기억된 회전수보다 클때 조건 추가
-                            if (time3-time4 > 500000):# and (current_cnt > mem_cnt):
-                                time4 = int(date.get_time_millisec())
-                                detected_time = date.get_time_in_mmddss()
-                                detected_date = date.get_date_in_yyyymmdd()
-                                count = count + 1
-
-                                # meter, 회전수 메모리 변수 값을 현재 값으로 변경
-                                mem_meter = current_meter
-                                mem_cnt = current_cnt
-                                
-                                # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
-                                client.write_coils(0x0020,1)
-                                client.write_coils(0x0020,0)
-                                
-                                # 제품 에러 수 가져오기
-                                result_err_cnt= client.read_holding_registers(0x0008)
-                                err_cnt_array = int(result_err_cnt.registers[0])
-
-                                m_m = err_cnt_array + 1000
-                                ft_ft = err_cnt_array + 5000
-                                d1000_m  = client.read_holding_registers(m_m)
-                                d5000_ft = client.read_holding_registers(ft_ft)
-                                d_meter = d1000_m.registers[0]
-                                d_feet = d5000_ft.registers[0]
-
-                                type = "area"
-                                
-                                area = int(mean_masks[len(mean_masks)-1])
-                                
-                                cv2.imwrite('C:/image/'+detected_date+'/area_box/'+ str(i) + '_' + detected_time+'.jpg', results[i][0].plot())
-                                
+                            if (time3 - time4 > 500000):
                                 for l in range(len(cameras)):
-                                    print(l)
-                                    cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+ str(l)+ '_' + detected_time+'.jpg', images[l])
+                                    time4 = int(date.get_time_millisec())
+                                    # print(l)
+                                    detected_time = date.get_time_in_mmddss()
+                                    detected_date = date.get_date_in_yyyymmdd()
+                                    cv2.imwrite('C:/image/'+detected_date+'/area_box/'+detected_time+'.jpg', results[l][0].plot())
+                                    cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+detected_time+'.jpg', images[l])
+                                    count = count + 1
+                                
+                                    # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                                    client.write_coils(0x0020,1)
+                                    client.write_coils(0x0020,0)
+                                    m_m = count + 1000
+                                    ft_ft = count + 5000
+                                    d1000_m  = client.read_holding_registers(m_m)
+                                    d5000_ft = client.read_holding_registers(ft_ft)
+                                    d_meter = d1000_m.registers[0]
+                                    d_feet = d5000_ft.registers[0]
+
+                                    type = "area"
+                                    
+                                    area = int(mean_masks[len(mean_masks)-1])
                                     
                                     # 이미지 저장 위치
-                                image = "C:/image/"+detected_date+"/area_box/"+ str(i) + '_' + str(detected_time)+".jpg"
+                                    image = "C:/image/"+detected_date+"/area_box/"+str(detected_time)+".jpg"
                                     
-                                detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, detected_time, image, area)
+                                    detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
                             # print("")
                         # # 면적이상 이벤트 코드 끝 #
                         # # 면적이상 이벤트 코드 끝 #
@@ -900,14 +728,14 @@ def detect_camera():
             if len(mean_masks) >= 10:
                 time5 = int(date.get_date_time())
                 mean_masks.pop(0)
-                if(time5-time6 > 1):# and (current_cnt > mem_cnt):
+                if(time5-time6 > 1):
                     time6 = int(date.get_date_time())
-                    # meter, 회전수 메모리 변수 값을 현재 값으로 변경
-                    mem_meter = current_meter
-                    mem_cnt = current_cnt
-                    areadb.write_sql(mmddhhnnss, s_n, int(np.mean(mean_masks)))
+                    areadb.write_sql(s_time, s_n, int(np.mean(mean_masks)))
                     # print(len(mean_masks))
                     # SQL
+
+
+
             
             # Repeat the same process after every 10 milliseconds
             label_camera1.after(30, check_start)
