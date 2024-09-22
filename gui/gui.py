@@ -26,9 +26,9 @@ import logging
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-# model = YOLO('C:/source/models/taihanfiber_5-1_best_t2.pt')
-model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
-imgsize, confidence = 640, 0.70
+model = YOLO('C:/source/models/20240919_taihanfiber_5-1_best_a3.pt') # pruning 적용
+# model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
+imgsize, confidence = 640, 0.65
 # 케이블 면적 기준 값
 cable_area_base = 0
 
