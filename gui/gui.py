@@ -26,9 +26,9 @@ import logging
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/20240919_taihanfiber_5-1_best_a3.pt') # pruning 적용
+model = YOLO('C:/source/models/20240922_taihanfiber_5-2_best_a.pt') # pruning 적용
 # model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
-imgsize, confidence = 640, 0.65
+imgsize, confidence = 640, 0.5
 # 케이블 면적 기준 값
 cable_area_base = 0
 
@@ -228,6 +228,12 @@ def start_btn_check():
 
 ######  tkinter  end   ######
 
+#areabaseset 버튼 수동 실행 시작
+def areabaseset():
+    exposure_change()
+    mask_area_base_set()
+#Start 버튼 수동 실행 끝
+
 
 #Start 버튼 수동 실행 시작
 def startbtn():
@@ -270,8 +276,9 @@ def makedirs(path):
         print("Error: Failed to create the directory.")
 # Make folder end #
 
-
-time1, time2,time3, time4,time5, time6 = 0, 0, 0, 0,0,0
+time1, time2 =[0,0,0], [0,0,0]
+time3, time4 =[0,0,0], [0,0,0]
+time5, time6 = 0, 0
 ######  Get m53, m54 Start   ######
 m01, m04, m53, m54, s_time, count = False, False, False, False, 0, 0
 # m53, m54 = False, False
@@ -280,11 +287,27 @@ m53m, m54m = m53, m54
 # s_time = 0
 getm = 0
 
+detected = []
 
+# 이전과 현재가 바뀌었나 확인
+def is_detected(x):
+    if (x in detected):
+        file_path = "C:/source/log/"+str(date.get_date_in_yyyymmdd())+"_detected.txt"
+        # duplicated = str(date.get_date_time()) + ": " + str(x) + ", "
+        duplicated = str(x) + ", "
+        # with open(file_path, "a") as file:
+        #     # file.write(duplicated + "\n")
+        #     file.write(duplicated)
+        return False
+    else:
+        if len(detected) >= 30:
+            detected.pop(0)
+        detected.append(x)
+        return True
 
 ######  Start button status check start   ######
 def check_start():
-    global m04, m53m, m54m, s_time, count
+    global m04, m53m, m54m, s_time, count, detected
     start_btn_check()
     
     # resetbtn()
@@ -328,6 +351,15 @@ def check_start():
         
         # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
         detect_camera()
+
+        
+        file_path = "C:/source/log/"+str(date.get_date_in_yyyymmdd())+"_detected.txt"
+        x = sorted(detected)
+        txt_detected = str(date.get_date_time()) + ": " + str(len(detected)) + ": " + str(x)
+        with open(file_path, "a") as file:
+            file.write("\n" + txt_detected + "\n")
+
+        detected = []
         m53m, m54m = m53, m54
     # Start 버튼 눌른 후 다음 Start 버튼 누르기 전인가?
     else:
@@ -337,13 +369,14 @@ def check_start():
 ######  Start button status check end   ######
 
 def exposure_change():
-    grabResults, cams_bright_mean = [], []
-    for h in range (10):
+    cams_bright_mean = []
+    for h in range(100):
         h = h + 1
         i = 0
+        grabResults = []
         for i in range(len(cameras)):
             grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-            if grabResults[i].GrabSucceeded():
+            if grabResults[i].GrabSucceeded() & (h>50):
 
                 cams_bright_mean.append(np.mean(converter.Convert(grabResults[i]).GetArray()))
                 # print(np.mean(cams_bright_mean), cams_bright_mean)
@@ -551,161 +584,184 @@ def detect_camera():
                         images[i] = images[i].GetArray()
                         images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
-                        # Run YOLOv8 inference on the frame
-                        # results1 = model(img1)
-                        results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
 
-                        # Replace class names with custom labels in the results
-                        for result in results[i]:
-                            for cls_id, custom_label in class_mapping.items():
-                                if cls_id in result.names: # check if the class id is in the results
-                                    result.names[cls_id] = custom_label # replace the class name with the custom label
-
-                        # Visualize the results on the frame
-                        annotated_imgs.append(cv2.resize(results[i][0].plot(), (330,330)))
-
-                        ######  tkinter  start ######
-                        # Capture the latest frame and transform to image
-                        cap_imgs.append(Image.fromarray(annotated_imgs[i]))
-
-                        # Convert captured image to photoimage 
-                        photos.append(ImageTk.PhotoImage(image=cap_imgs[i]))
-
-                        # Displaying photoimage in the label 
-                        # label_cameras[i].photo_image = photos[i]
-                        
-                        # Configure image in the label 
-                        # label_cameras[i].configure(image=photos[i])
-
-                        if i == 0:
-                            label_camera1.photo_image = photos[i]
-                            label_camera1.configure(image=photos[i])
-                            # show_camera1(photos[i])
-                        elif i == 1:
-                            label_camera2.photo_image = photos[i]
-                            label_camera2.configure(image=photos[i])
-                            # show_camera2(photos[i])
-                        elif i == 2:
-                            label_camera3.photo_image = photos[i]
-                            label_camera3.configure(image=photos[i])
-                            # show_camera3(photos[i])
-
-                        #### mask area start ####
-
-                        # Detact 된 항목중 Class가 0 ("cable") 인 항목을 찾기
-                        c_num = 0
-                        for j in range(len(results[i][0].boxes.cls)):
-                            if int(results[i][0].boxes.cls[j]) == 0:
-                                c_num = j
-                                break
-                            
-                        # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
-                        if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[c_num]) == 0):
-                            # Segmentation
-                            data = results[i][0].masks.data      # masks, (N, H, W)
-
-                            # generate mask
-                            mask = data[c_num]  # torch.unique(mask) = [0., 1.]
-                            # Convert the tensor to a NumPy array
-                            mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
-                            mask_count = np.count_nonzero(mask == 255)
-                            masks.append(mask_count)
-                            
                         #### mask area end ####
+                except Exception as e:
+                    # print(f"===========ERROR==========: {e}")
+                    # traceback.print_exc(file=sys.stdout)
+                    continue
 
-                        # Detact 된 항목중 Class가 0 ("defact") 인 항목을 찾기
-                        d_num = 0
-                        for k in range(len(results[i][0].boxes.cls)):
-                            if int(results[i][0].boxes.cls[k]) == 1:
-                                d_num = k
-                                break
 
-                        global time1, time2
+            for i in range(len(cameras)):
+                try:
+                    # Run YOLOv8 inference on the frame
+                    # results1 = model(img1)
+                    results.append(model.predict(images[i], save=False, imgsz=imgsize, conf=confidence))
 
-                        if int(results[i][0].boxes.cls[d_num]) == 1:
-                            time1 = int(date.get_time_millisec())
+                    # Replace class names with custom labels in the results
+                    for result in results[i]:
+                        for cls_id, custom_label in class_mapping.items():
+                            if cls_id in result.names: # check if the class id is in the results
+                                result.names[cls_id] = custom_label # replace the class name with the custom label
 
-                            if int(results[i][0].boxes.cls[d_num]) == 1 & (time1 - time2 > 500000):
-                                time2 = int(date.get_time_millisec())
-                                detected_time = date.get_time_in_mmddss()
-                                detected_date = date.get_date_in_yyyymmdd()
-                                cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
-                                cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time+'.jpg', images[i])
-                                count = count + 1
+                    # Visualize the results on the frame
+                    annotated_imgs.append(cv2.resize(results[i][0].plot(), (330,330)))
 
-                                # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
+                    ######  tkinter  start ######
+                    # Capture the latest frame and transform to image
+                    cap_imgs.append(Image.fromarray(annotated_imgs[i]))
 
-                                # 감지 시간 저장
-                                d_time = int(detected_time)
+                    # Convert captured image to photoimage 
+                    photos.append(ImageTk.PhotoImage(image=cap_imgs[i]))
 
-                                # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
-                                client.write_coils(0x0020,1)
-                                client.write_coils(0x0020,0)
-                                m_m = count + 1000
-                                ft_ft = count + 5000
-                                d1000_m  = client.read_holding_registers(m_m)
-                                d5000_ft = client.read_holding_registers(ft_ft)
-                                d_meter = d1000_m.registers[0]
-                                d_feet = d5000_ft.registers[0]
-                                
-                                # 오류 유형
-                                type = "defect"
+                    # Displaying photoimage in the label 
+                    # label_cameras[i].photo_image = photos[i]
+                    
+                    # Configure image in the label 
+                    # label_cameras[i].configure(image=photos[i])
 
-                                # 이미지 저장 위치
-                                image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
-                                # area = 123
-                                area = int(mean_masks[len(mean_masks)-1])
+                    if i == 0:
+                        label_camera1.photo_image = photos[i]
+                        label_camera1.configure(image=photos[i])
+                        # show_camera1(photos[i])
+                    elif i == 1:
+                        label_camera2.photo_image = photos[i]
+                        label_camera2.configure(image=photos[i])
+                        # show_camera2(photos[i])
+                    elif i == 2:
+                        label_camera3.photo_image = photos[i]
+                        label_camera3.configure(image=photos[i])
+                        # show_camera3(photos[i])
 
-                                detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
-                                # time.sleep(1)
+                    #### mask area start ####
 
-                        # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
+                    # Detact 된 항목중 Class가 0 ("cable") 인 항목을 찾기
+                    c_num = 0
+                    for j in range(len(results[i][0].boxes.cls)):
+                        if int(results[i][0].boxes.cls[j]) == 0:
+                            c_num = j
+                            break
+                        
+                    # Detect가 되고, Detect 의 Class가 0 ("cable") 이면 Mask area 저장
+                    if not(results[i][0].masks==None) and (int(results[i][0].boxes.cls[c_num]) == 0):
+                        # Segmentation
+                        data = results[i][0].masks.data      # masks, (N, H, W)
 
-                        # # 면적이상 이벤트 코드 시작 #
-                        # # 면적이상 이벤트 코드 시작 #
-                        # # 면적이상 이벤트 코드 시작 #
-                        # # 면적이상 이벤트 코드 시작 #
-                        global time3, time4
-                        if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.30) and (len(cameras)==i+1):
-                            time3 = int(date.get_time_millisec())
-                            # 불량 감지 코드 추가
-                            # print("면적불량 감지 !!!")
-                            # print("카메라 숫자: ", len(cameras))
-                            # print("masks 에 담긴 숫자: ", len(masks))
-                            # print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
-                            if (time3 - time4 > 500000):
-                                for l in range(len(cameras)):
-                                    time4 = int(date.get_time_millisec())
-                                    # print(l)
-                                    detected_time = date.get_time_in_mmddss()
-                                    detected_date = date.get_date_in_yyyymmdd()
-                                    cv2.imwrite('C:/image/'+detected_date+'/area_box/'+detected_time+'.jpg', results[l][0].plot())
-                                    cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+detected_time+'.jpg', images[l])
-                                    count = count + 1
-                                
-                                    # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
-                                    client.write_coils(0x0020,1)
-                                    client.write_coils(0x0020,0)
-                                    m_m = count + 1000
-                                    ft_ft = count + 5000
-                                    d1000_m  = client.read_holding_registers(m_m)
-                                    d5000_ft = client.read_holding_registers(ft_ft)
-                                    d_meter = d1000_m.registers[0]
-                                    d_feet = d5000_ft.registers[0]
+                        # generate mask
+                        mask = data[c_num]  # torch.unique(mask) = [0., 1.]
+                        # Convert the tensor to a NumPy array
+                        mask = mask.cpu().numpy()*255 # np.unique(mask) = [0, 255]
+                        mask_count = np.count_nonzero(mask == 255)
+                        masks.append(mask_count)
+                        
+                    #### mask area end ####
 
-                                    type = "area"
-                                    
-                                    area = int(mean_masks[len(mean_masks)-1])
-                                    
-                                    # 이미지 저장 위치
-                                    image = "C:/image/"+detected_date+"/area_box/"+str(detected_time)+".jpg"
-                                    
-                                    detect.write_sql(s_time, s_n, count, d_meter, type, detected_time, image, area)
-                            # print("")
-                        # # 면적이상 이벤트 코드 끝 #
-                        # # 면적이상 이벤트 코드 끝 #
-                        # # 면적이상 이벤트 코드 끝 #
-                        # # 면적이상 이벤트 코드 끝 #
+                    # Detact 된 항목중 Class가 0 ("defact") 인 항목을 찾기
+                    d_num = 0
+                    for k in range(len(results[i][0].boxes.cls)):
+                        if int(results[i][0].boxes.cls[k]) == 1:
+                            d_num = k
+                            break
+
+                    global time1, time2
+
+                    time1[i] = int(date.get_time_millisec())
+                    # if (int(results[i][0].boxes.cls[d_num]) == 1) :
+                    if (int(results[i][0].boxes.cls[d_num]) == 1) & (time1[i] - time2[i] > 500000) :
+                        # 같은 위치인가 아닌가
+                        # x1, y1, x2, y2 = results[i][0].boxes.xyxy[d_num]
+                        x1, y1, w1, h1 = results[i][0].boxes.xywh[d_num]
+                        # Convert to integers for drawing
+                        x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
+
+                        if int(results[i][0].boxes.cls[d_num]) == 1 & is_detected((i,x1))== True:
+                        # if int(results[i][0].boxes.cls[d_num]) == 1:
+                            time2[i] = int(date.get_time_millisec())
+                            detected_time = date.get_time_millisec()[0:16]
+                            detected_date = date.get_date_in_yyyymmdd()
+                            cv2.imwrite('C:/image/'+detected_date+'/box/'+detected_time+'.jpg', results[i][0].plot())
+                            for j in range(len(cameras)):
+                                cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time + '-' + str(j) + '.jpg', images[j])
+                            count = count + 1
+
+                            # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
+
+                            # 감지 시간 저장
+                            d_time = int(date.get_time_in_mmddss())
+
+                            # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                            client.write_coils(0x0020,1)
+                            client.write_coils(0x0020,0)
+                            m_m = count + 1000
+                            ft_ft = count + 5000
+                            d1000_m  = client.read_holding_registers(m_m)
+                            d5000_ft = client.read_holding_registers(ft_ft)
+                            d_meter = d1000_m.registers[0]
+                            d_feet = d5000_ft.registers[0]
+                            
+                            # 오류 유형
+                            type = "defect"
+
+                            # 이미지 저장 위치
+                            image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
+                            # area = 123
+                            area = int(mean_masks[len(mean_masks)-1])
+
+                            detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                            # time.sleep(1)
+
+                    # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
+
+                    # # 면적이상 이벤트 코드 시작 #
+                    # # 면적이상 이벤트 코드 시작 #
+                    # # 면적이상 이벤트 코드 시작 #
+                    # # 면적이상 이벤트 코드 시작 #
+                    global time3, time4
+                    if (not (cable_area_base == 0)) and (int(np.mean(masks)) > cable_area_base*1.30) and (len(cameras)==i+1):
+                        time3[i] = int(date.get_time_millisec())
+                        # 불량 감지 코드 추가
+                        # print("면적불량 감지 !!!")
+                        # print("카메라 숫자: ", len(cameras))
+                        # print("masks 에 담긴 숫자: ", len(masks))
+                        # print("기준값: ", cable_area_base, "현재 케이블 면적: ", int(np.mean(masks)))
+                        # if True:
+                        if (time3[i] - time4[i] > 500000):
+                            time4[i] = int(date.get_time_millisec())
+                            # print(l)
+                            detected_time = date.get_time_millisec()[0:16]
+                            # detected_time = detected_time
+                            detected_date = date.get_date_in_yyyymmdd()
+                            cv2.imwrite('C:/image/'+detected_date+'/area_box/'+detected_time+'.jpg', results[l][0].plot())
+                            for j in range(len(cameras)):
+                                cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+detected_time+'-' + str(j) + '.jpg', images[j])
+                            count = count + 1
+                            
+                            # 감지 시간 저장
+                            d_time = int(date.get_time_in_mmddss())
+                        
+                            # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                            client.write_coils(0x0020,1)
+                            client.write_coils(0x0020,0)
+                            m_m = count + 1000
+                            ft_ft = count + 5000
+                            d1000_m  = client.read_holding_registers(m_m)
+                            d5000_ft = client.read_holding_registers(ft_ft)
+                            d_meter = d1000_m.registers[0]
+                            d_feet = d5000_ft.registers[0]
+
+                            type = "area"
+                            
+                            area = int(mean_masks[len(mean_masks)-1])
+                            
+                            # 이미지 저장 위치
+                            image = "C:/image/"+detected_date+"/area_box/"+str(detected_time)+".jpg"
+                            
+                            detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                        # print("")
+                    # # 면적이상 이벤트 코드 끝 #
+                    # # 면적이상 이벤트 코드 끝 #
+                    # # 면적이상 이벤트 코드 끝 #
+                    # # 면적이상 이벤트 코드 끝 #
 
 
                         #### mask area end ####
@@ -782,6 +838,12 @@ btn_close = Button(win, text="Close Program", command=win.destroy)
 # btn_open.grid(row=0,column=0) 
 # btn_close.pack()
 btn_close.place(x=182, y=2)
+
+# Create a button to open the camera in GUI app 
+btn_open = Button(win, text="면적 초기화", command=areabaseset) 
+# btn_open.grid(row=0,column=0) 
+# btn_open.pack()
+# btn_open.place(x=840, y=410)
 
 # Create a button to open the camera in GUI app 
 btn_open = Button(win, text="Start Button", command=startbtn) 
