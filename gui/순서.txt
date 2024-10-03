@@ -1,0 +1,50 @@
+time1, time2, time3, time4, time5, time6 = 0, 0, 0, 0, 0, 0
+m01, m04, m53, m54, s_time, count = False, False, False, False, 0, 0
+m53m, m54m = m53, m54
+getm = 0
+mem_meter = 0
+
+mem_m54, mem_m54, cur_m53, cur_m54 = False, False, False, False
+
+check_start()
+	start_btn_check() # 리셋버튼 값 체크 및 tkinter에 표시
+		PLC 정보 가져오기
+			m01 -> Start 버튼이 1번 눌리면 1, 그 다음 눌리면 0
+			m53, m54 ->  초기에는 둘다 False, m01이 변경되면 (1,0) 그다음 변경되면 (0,1)
+			m04 -> Start 버튼이 눌린 상태면 False
+		show_m01_value() -> tkinter에 m01, m53, m54, m04 표시 변경
+		
+	if 컴퓨터 부팅 후 start버튼이 한번도 안눌렸으면, m53, m54 둘다 false면(물리적  m01)->
+		mem_m54, mem_m54 = cur_m53, cur_m54
+		show_camera() # 화면에 카메라 영상만 뿌려주기
+			check_start() 다시 시작
+			
+	if 컴퓨터 부팅 후 물리적 Start 버튼이 아직 안눌린 상태면 m04 == True, 0) 이면 ->
+		show_camera() # 화면에 카메라 영상만 뿌려주기
+			check_start() 다시 시작
+			
+	if 방금 Start 버튼이 눌렸으면, m53, m54가 기억하고있는거랑 다르면 (mem_m53 하고 cur_m53 하고 다르면) -> 
+		프로그램 가동 후 PLC에 눌려져 있으면  ->	mem_m54, mem_m54 = False, False
+											cur_m53, cur_m54 = False, True
+	
+	
+		현재 cable_meter => 0
+		면적 보관위해 오늘날짜 폴더 생성
+		현재사간 가져오기
+		exposure_change() 밝기 변경되면
+		mask_area_base_set() 기준 넓이 측정
+		start.write_sql3()sql에 사직시간, 기준넓이 저장
+		detect_camera() 시작
+		m53m, m54m 에 현재 m53, m54값 넣기
+	else Start 버튼 이미 눌렸고, 다음 start 버튼 누르기 전이면(m53, m54값이 기억하고있는거랑 같으면)
+		detect_camera() 시작
+
+detect_camera()
+	current_meter = 현재 미터 할당
+	if Detect 가 되고 class가 0, cable 이면 -> masks[]에 현재 케이블 넓이 저장
+	if Detect 가 되고 class가 1, Defect 이고, 기억하는 mtermem_meter <= current_meter
+		mem_meter == current_meter
+		
+							
+manual_reset()
+	m01, m53, m54 -> 전부 0으로 변경

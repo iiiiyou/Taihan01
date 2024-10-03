@@ -4,12 +4,12 @@ import shutil
 
 from roboflow import Roboflow
 
-dataset_name = "taihanfiber_4-1"
+dataset_name = "taihanfiber_5-2"
 if not os.path.exists("datasets/"+dataset_name):
 
     rf = Roboflow(api_key="bxW7hooY5jiknZS3GIxI")
-    project = rf.workspace("i4umaket").project("taihanfiber_4")
-    version = project.version(1)
+    project = rf.workspace("i4umaket").project("taihanfiber_5")
+    version = project.version(2)
     dataset = version.download("yolov8")
 
     shutil.move(dataset_name, "datasets/"+dataset_name)
@@ -26,7 +26,7 @@ if __name__ == '__main__':
     print("training start")
     # data.yaml안에 있는 경로 기본 설정 "C:\Users\<user>\AppData\Roaming\Ultralytics\settings.yaml"
     # datasets_dir: C:\workspace\maketek "in settings.yaml"
-    results = model.train(data="datasets/"+dataset_name+"/data.yaml", epochs=500, imgsz=640, workers=0)
+    results = model.train(data="datasets/"+dataset_name+"/data.yaml", dropout=0.03, epochs=100, imgsz=640, workers=8, batch=8, patience=50)
 
     # data.yaml 안의 image파일 경로
     # test: test/images

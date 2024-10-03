@@ -13,7 +13,9 @@ import util.format_date_time as date
 
 # Load the YOLOv8 model#
 # model = YOLO('C:/source/models/20240915_taihanfiber_5-1_best_h.pt')  # 화성w/s best 모델
-model = YOLO('C:/source/models/20240915_taihanfiber_5-1_best_a.pt')  # 안양s/s best 모델
+model_1 = YOLO('C:/source/models/20240915_taihanfiber_5-1_best_a.pt') 
+model_2 = YOLO('C:/source/models/20240915_taihanfiber_5-1_best_a.pt') 
+model_3 = YOLO('C:/source/models/20240915_taihanfiber_5-1_best_a.pt') 
 # model = YOLO('C:/source/models/20240919_taihanfiber_5-1_best_a3.pt') # 안양w/s pruning=0.03 epoch=100
 # model = YOLO('C:/source/models/taihanfiber_5-1_best_t2.pt')
 # model = YOLO('yolov8s-seg.pt')
@@ -110,7 +112,7 @@ while camera1.IsGrabbing() & camera2.IsGrabbing() & camera3.IsGrabbing():
 
         # Run YOLOv8 inference on the frame
         # results1 = model(img1)
-        results1 = model.predict(img1r, save=False, imgsz=imgsize, conf=confidence)
+        results1 = model_1.predict(img1r, save=False, imgsz=imgsize, conf=confidence)
         # Visualize the results on the frame
         annotated_img1 = results1[0].plot()
         
@@ -120,7 +122,7 @@ while camera1.IsGrabbing() & camera2.IsGrabbing() & camera3.IsGrabbing():
 
         # Run YOLOv8 inference on the frame
         # results2 = model(img2)
-        results2 = model.predict(img2r, save=False, imgsz=imgsize, conf=confidence)
+        results2 = model_2.track(img2r, save=False, imgsz=imgsize, conf=confidence)
         # Visualize the results on the frame
         annotated_img2 = results2[0].plot()
         
@@ -130,7 +132,7 @@ while camera1.IsGrabbing() & camera2.IsGrabbing() & camera3.IsGrabbing():
 
         # Run YOLOv8 inference on the frame
         # results3 = model(img3)
-        results3 = model.predict(img3r, save=False, imgsz=imgsize, conf=confidence)
+        results3 = model_3.track(img3r, save=False, imgsz=imgsize, conf=confidence)
         # Visualize the results on the frame
         annotated_img3 = results3[0].plot()
       

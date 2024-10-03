@@ -12,6 +12,8 @@ sys.path.append('C:/source')
 import util.format_date_time as date
 import time
 
+file_path = "C:/source/basler/camera_20240912.txt"
+
 # conecting to the first available camera
 camera = pylon.InstantCamera(pylon.TlFactory.GetInstance().CreateFirstDevice())
 
@@ -93,6 +95,13 @@ while camera1.IsGrabbing() & camera2.IsGrabbing() & camera3.IsGrabbing():
         cv2.imshow('title1', img1r)# cv2.resize(img1r, (330,330)))
         cv2.imshow('title2', img2r)# cv2.resize(img2r, (330,330)))
         cv2.imshow('title3', img3r)# cv2.resize(img3r, (330,330)))
+        camera1_jpg = 'images/training/640_'+date.get_time_millisec()+'_Upside.jpg'
+        camera2_jpg = 'images/training/640_'+date.get_time_millisec()+'_Right.jpg'
+        camera3_jpg = 'images/training/640_'+date.get_time_millisec()+'_Left.jpg'
+        with open(file_path, "a") as file:
+            file.write(camera1_jpg + "\n")
+            file.write(camera2_jpg + "\n")
+            file.write(camera3_jpg + "\n")
 
         k = cv2.waitKey(1)
         # 캡쳐

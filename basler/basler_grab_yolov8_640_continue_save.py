@@ -11,11 +11,9 @@ import sys
 sys.path.append('C:/source')
 import util.format_date_time as date
 
+file_path = "C:/source/basler/20240922_taihanfiber_5-2.txt"
 # Load the YOLOv8 model#
-# model = YOLO('C:/source/models/20240915_taihanfiber_5-1_best_h.pt')  # 화성w/s best 모델
-model = YOLO('C:/source/models/20240915_taihanfiber_5-1_best_a.pt')  # 안양s/s best 모델
-# model = YOLO('C:/source/models/20240919_taihanfiber_5-1_best_a3.pt') # 안양w/s pruning=0.03 epoch=100
-# model = YOLO('C:/source/models/taihanfiber_5-1_best_t2.pt')
+model = YOLO('C:/source/models/20240922_taihanfiber_5-2_best_a.pt')
 # model = YOLO('yolov8s-seg.pt')
 
 
@@ -88,7 +86,7 @@ while camera1.IsGrabbing() & camera2.IsGrabbing() & camera3.IsGrabbing():
     grabResult2 = camera2.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
     grabResult3 = camera3.RetrieveResult(5000, pylon.TimeoutHandling_ThrowException)
 
-    imgsize, confidence = 640, 0.70
+    imgsize, confidence = 640, 0.30
     if grabResult1.GrabSucceeded() and grabResult2.GrabSucceeded() and grabResult3.GrabSucceeded():
         # Access the image data
 
@@ -143,6 +141,22 @@ while camera1.IsGrabbing() & camera2.IsGrabbing() & camera3.IsGrabbing():
         cv2.imshow('title1', annotated_img1) # cv2.resize(annotated_img1, (330,330)))
         cv2.imshow('title2', annotated_img2) # cv2.resize(annotated_img2, (330,330)))
         cv2.imshow('title3', annotated_img3) # cv2.resize(annotated_img3, (330,330)))
+
+        camera1_jpg = 'images/capture/640_'+date.get_time_millisec()+'_Camera1_original.jpg'
+        camera2_jpg = 'images/capture/640_'+date.get_time_millisec()+'_Camera2_original.jpg'
+        camera3_jpg = 'images/capture/640_'+date.get_time_millisec()+'_Camera3_original.jpg'
+        with open(file_path, "a") as file:
+            file.write(camera1_jpg + "\n")
+            file.write(camera2_jpg + "\n")
+            file.write(camera3_jpg + "\n")
+
+        # cv2.imwrite('images/capture/640_'+date.get_time_millisec()+'_Camera1_original.jpg', img1r)
+        # cv2.imwrite('images/capture/640_'+date.get_time_millisec()+'_Camera2_original.jpg', img2r)
+        # cv2.imwrite('images/capture/640_'+date.get_time_millisec()+'_Camera3_original.jpg', img3r)
+        # cv2.imwrite('images/capture/640_'+date.get_time_millisec()+'_Camera1_annotated.jpg', annotated_img1)
+        # cv2.imwrite('images/capture/640_'+date.get_time_millisec()+'_Camera2_annotated.jpg', annotated_img2)
+        # cv2.imwrite('images/capture/640_'+date.get_time_millisec()+'_Camera3_annotated.jpg', annotated_img3)    
+
         k = cv2.waitKey(1)
         # 캡쳐
         if k == ord('c'):
