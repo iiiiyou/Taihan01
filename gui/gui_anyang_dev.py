@@ -280,7 +280,7 @@ time1, time2 =[0,0,0], [0,0,0]
 time3, time4 =[0,0,0], [0,0,0]
 time5, time6 = 0, 0
 ######  Get m53, m54 Start   ######
-m01, m04, m53, m54, s_time, count = False, False, False, False, 0, 0
+m01, m04, m53, m54, s_time, count, mmddhhnnss = False, False, False, False, 0, 0, 0
 # m53, m54 = False, False
 m53m, m54m = m53, m54
 # count = 0
@@ -307,7 +307,7 @@ def is_detected(x):
 
 ######  Start button status check start   ######
 def check_start():
-    global m04, m53m, m54m, s_time, count, detected
+    global m04, m53m, m54m, s_time, count, detected, mmddhhnnss
     start_btn_check()
     
     # resetbtn()
@@ -338,7 +338,27 @@ def check_start():
         makedirs(path)
 
         # 시작 시간 가져오기
-        s_time = int(date.get_date_time())
+        # s_time = int(date.get_date_time())
+        
+        # 제품 시작시간 가져오기
+        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
+        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
+        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
+        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
+        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
+        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
+        yyyy = result_d632.registers[0]
+        mm = result_d621.registers[0]
+        dd = result_d622.registers[0]
+        hh = result_d623.registers[0]
+        nn = result_d624.registers[0]
+        ss = result_d625.registers[0]
+        mm = str(mm).zfill(2)
+        dd = str(dd).zfill(2)
+        hh = str(hh).zfill(2)
+        nn = str(nn).zfill(2)
+        ss = str(ss).zfill(2)
+        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
 
 
         # print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
@@ -347,7 +367,7 @@ def check_start():
         mask_area_base_set()
         
         #SQL insert (시작시간)
-        start.write_sql3(s_time, cable_area_base)
+        start.write_sql3(mmddhhnnss, cable_area_base)
         
         # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
         detect_camera()
@@ -684,6 +704,10 @@ def detect_camera():
                                 cv2.imwrite('C:/image/'+detected_date+'/Original/'+detected_time + '-' + str(j) + '.jpg', images[j])
                             count = count + 1
 
+                            # PLC에서 제품 에러 수 가져오기
+                            result_err_cnt= client.read_holding_registers(0x0008)
+                            err_cnt_array = int(result_err_cnt.registers[0])+1
+
                             # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
 
                             # 감지 시간 저장
@@ -692,8 +716,10 @@ def detect_camera():
                             # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
                             client.write_coils(0x0020,1)
                             client.write_coils(0x0020,0)
-                            m_m = count + 1000
-                            ft_ft = count + 5000
+                            # m_m = count + 1000
+                            # ft_ft = count + 5000
+                            m_m = err_cnt_array + 1000
+                            ft_ft = err_cnt_array + 5000
                             d1000_m  = client.read_holding_registers(m_m)
                             d5000_ft = client.read_holding_registers(ft_ft)
                             d_meter = d1000_m.registers[0]
@@ -707,7 +733,7 @@ def detect_camera():
                             # area = 123
                             area = int(mean_masks[len(mean_masks)-1])
 
-                            detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                            detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
                             # time.sleep(1)
 
                     # Detect가 되고, Detect 의 Class가 1 ("error") 이면 SQL 삽입
@@ -736,14 +762,20 @@ def detect_camera():
                                 cv2.imwrite('C:/image/'+detected_date+'/area_Original/'+detected_time+'-' + str(j) + '.jpg', images[j])
                             count = count + 1
                             
+                            # PLC에서 제품 에러 수 가져오기
+                            result_err_cnt= client.read_holding_registers(0x0008)
+                            err_cnt_array = int(result_err_cnt.registers[0])+1
+
                             # 감지 시간 저장
                             d_time = int(date.get_time_in_mmddss())
                         
                             # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
                             client.write_coils(0x0020,1)
                             client.write_coils(0x0020,0)
-                            m_m = count + 1000
-                            ft_ft = count + 5000
+                            # m_m = count + 1000
+                            # ft_ft = count + 5000
+                            m_m = err_cnt_array + 1000
+                            ft_ft = err_cnt_array + 5000
                             d1000_m  = client.read_holding_registers(m_m)
                             d5000_ft = client.read_holding_registers(ft_ft)
                             d_meter = d1000_m.registers[0]
@@ -756,7 +788,7 @@ def detect_camera():
                             # 이미지 저장 위치
                             image = "C:/image/"+detected_date+"/area_box/"+str(detected_time)+".jpg"
                             
-                            detect.write_sql(s_time, s_n, count, d_meter, type, d_time, image, area)
+                            detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
                         # print("")
                     # # 면적이상 이벤트 코드 끝 #
                     # # 면적이상 이벤트 코드 끝 #
@@ -786,7 +818,7 @@ def detect_camera():
                 mean_masks.pop(0)
                 if(time5-time6 > 1):
                     time6 = int(date.get_date_time())
-                    areadb.write_sql(s_time, s_n, int(np.mean(mean_masks)))
+                    areadb.write_sql(mmddhhnnss, s_n, int(np.mean(mean_masks)))
                     # print(len(mean_masks))
                     # SQL
 
@@ -843,7 +875,7 @@ btn_close.place(x=182, y=2)
 btn_open = Button(win, text="면적 초기화", command=areabaseset) 
 # btn_open.grid(row=0,column=0) 
 # btn_open.pack()
-btn_open.place(x=840, y=410)
+# btn_open.place(x=840, y=410)
 
 # Create a button to open the camera in GUI app 
 btn_open = Button(win, text="Start Button", command=startbtn) 
