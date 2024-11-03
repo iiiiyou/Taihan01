@@ -29,7 +29,9 @@ logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 # Load the YOLOv8 model#
 model = YOLO('C:/source/models/20241028_taihanfiber_7-1_best_a.pt') # pruning 적용
 # model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
-imgsize, confidence = 640, 0.1
+imgsize = 640
+confidence = 0.5
+reset_confidence = 0.5
 # 케이블 면적 기준 값
 cable_area_base = 0
 
@@ -101,13 +103,13 @@ def show_camera1(camera1):
     label_camera1.config(image = camera1)
 # label_camera1.pack()
 
-# 케이블 기준 면적 라벨
+# 검사 상태 라벨
 label_cable1 = Label(win)
 label_cable1.config(text = "검사 상태: ")
 label_cable1.place(x=20, y=60)
 # label_cable1.pack()
 
-# 케이블 기준 면적 값
+# 검사 상태 값
 value_cable1= Label(win)
 value_cable1.config(text = "준비 중")
 value_cable1.place(x=120, y=60)
@@ -115,19 +117,56 @@ def show_area_base(mask_area_base):
     value_cable1.config(text = mask_area_base)
 # value_cable1.pack()
 
-# 현재 케이블 면적 라벨
+# Confidence 라벨
 label_cable2 = Label(win)
 label_cable2.config(text = "Confidence: ")
 label_cable2.place(x=20, y=80)
 # label_cable2.pack()
 
-# 현재 케이블 면적 값
+# Confidence 값
 value_cable2 = Label(win)
 value_cable2.config(text = "준비 중")
 value_cable2.place(x=120, y=80)
 def show_mask_area(current_mask_area):
     value_cable2.config(text = current_mask_area)
 # value_cable2.pack()
+
+# function to display user text when 
+# button is clicked
+def confidence_change():
+    global confidence
+    new_confidence = float(entry_confidence.get())
+    confidence = new_confidence
+
+def confidence_init():
+    global reset_confidence
+    entry_confidence.delete(0, END)
+    entry_confidence.insert(0, reset_confidence) # 0.5를 기본값으로 설정  
+    label_confidence3.place(x=20, y=100)
+
+# Confidence 라벨
+label_confidence3 = Label(win)
+label_confidence3.config(text = "Confidence 변경: ")
+label_confidence3.place(x=20, y=100)
+
+# Confidence 입력 필드
+entry_confidence = Entry(win, width = 10)
+entry_confidence.insert(0, confidence) # 0.5를 기본값으로 설정
+entry_confidence.place(x=120, y=100)
+    
+# Confidence 변경 버튼
+btn_confidence = Button(win, text="Change", command=confidence_change) 
+btn_confidence.place(x=200, y=100)
+
+
+# # Create a button to open the camera in GUI app 
+# btn_open = Button(win, text="Reset Start button", command=manual_reset) 
+# # btn_open.grid(row=0,column=0) 
+# # btn_open.pack()
+# btn_open.place(x=120, y=505)
+
+
+
 
 # m01 라벨
 label_m01 = Label(win)
@@ -357,9 +396,8 @@ def check_start():
         start.write_sql3(mmddhhnnss, cable_area_base)
         
         # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
-        
-        show_area_base("검사 중")
-        show_mask_area(confidence)        
+
+        confidence_init() 
         detect_camera()
 
         
@@ -524,83 +562,92 @@ def detect_camera():
                     continue
 
 
-            # 사진 3장 합치기
-            channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
-            merge_img = imgmerge.merge(images, channel) # 합치기
-            # cv2.imshow('title1', merge_img)# cv2.resize(img1r, (330,330)))
-            # cv2.waitKey(0)
+            try:
+                # 사진 3장 합치기
+                channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+                merge_img = imgmerge.merge(images, channel) # 합치기
+                # cv2.imshow('title1', merge_img)# cv2.resize(img1r, (330,330)))
+                # cv2.waitKey(0)
+                
+
+                show_area_base("검사 중")
+                show_mask_area(confidence)   
+
+                # Run YOLOv8 inference on the frame
+                # results1 = model(img1)
+                result = model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence)
+
+                # Visualize the results on the frame
+                annotated_img = cv2.resize(result[0].plot(), (530,530))
+
+                ######  tkinter  start ######
+                # Capture the latest frame and transform to image
+                cap_img = Image.fromarray(annotated_img)
+
+                # Convert captured image to photoimage 
+                photo = ImageTk.PhotoImage(image=cap_img)
+
+                label_camera1.photo_image = photo
+                label_camera1.configure(image=photo)
+
+                global time1, time2
+                time1 = int(date.get_time_millisec())
+
+                if (result[0].boxes.shape[0] > 0) and True :
+                # if (result[0].boxes.shape[0] > 0) and (time1 - time2 > (100000*1)) : # 0.1초 * 5
+
+                    # 같은 위치인가 아닌가 확인하기 위해 detect 된 object 위치 파악
+                    # 여러 object가 발견되도 첫번째 detect 된 항목만 체크
+                    x1, y1, w1, h1 = result[0].boxes.xywh[0]
+                    # Convert to integers for drawing
+                    x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
+                    if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
+                        time2 = int(date.get_time_millisec())
+                        detected_time = date.get_time_millisec()[0:16]
+                        detected_date = date.get_date_in_yyyymmdd()
+                        cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
+                        cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
+                        count = count + 1
+
+                        # PLC에서 제품 에러 수 가져오기
+                        result_err_cnt= client.read_holding_registers(0x0008)
+                        err_cnt_array = int(result_err_cnt.registers[0])+1
+
+                        # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
+
+                        # 감지 시간 저장
+                        d_time = int(date.get_time_in_mmddss())
+
+                        # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                        client.write_coils(0x0020,1)
+                        client.write_coils(0x0020,0)
+                        # m_m = count + 1000
+                        # ft_ft = count + 5000
+                        m_m = err_cnt_array + 1000
+                        ft_ft = err_cnt_array + 5000
+                        d1000_m  = client.read_holding_registers(m_m)
+                        d5000_ft = client.read_holding_registers(ft_ft)
+                        d_meter = d1000_m.registers[0]
+                        d_feet = d5000_ft.registers[0]
+                        
+                        # 오류 유형
+                        type = "defect"
+
+                        # 이미지 저장 위치
+                        image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
+                        area = 0
+                        # area = int(mean_masks[len(mean_masks)-1])
+
+                        detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
+                        # time.sleep(1)
             
-            # Run YOLOv8 inference on the frame
-            # results1 = model(img1)
-            result = model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence)
+                # Repeat the same process after every 10 milliseconds
+                label_camera1.after(30, check_start)
 
-            # Visualize the results on the frame
-            annotated_img = cv2.resize(result[0].plot(), (530,530))
-
-            ######  tkinter  start ######
-            # Capture the latest frame and transform to image
-            cap_img = Image.fromarray(annotated_img)
-
-            # Convert captured image to photoimage 
-            photo = ImageTk.PhotoImage(image=cap_img)
-
-            label_camera1.photo_image = photo
-            label_camera1.configure(image=photo)
-
-            global time1, time2
-            time1 = int(date.get_time_millisec())
-
-            if time1 - time2 > (100000*1) : # 0.1초 * 5
-
-                # 같은 위치인가 아닌가 확인하기 위해 detect 된 object 위치 파악
-                # 여러 object가 발견되도 첫번째 detect 된 항목만 체크
-                x1, y1, w1, h1 = result[0].boxes.xywh[0]
-                # Convert to integers for drawing
-                x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
-                if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
-                    time2 = int(date.get_time_millisec())
-                    detected_time = date.get_time_millisec()[0:16]
-                    detected_date = date.get_date_in_yyyymmdd()
-                    cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
-                    cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
-                    count = count + 1
-
-                    # PLC에서 제품 에러 수 가져오기
-                    result_err_cnt= client.read_holding_registers(0x0008)
-                    err_cnt_array = int(result_err_cnt.registers[0])+1
-
-                    # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
-
-                    # 감지 시간 저장
-                    d_time = int(date.get_time_in_mmddss())
-
-                    # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
-                    client.write_coils(0x0020,1)
-                    client.write_coils(0x0020,0)
-                    # m_m = count + 1000
-                    # ft_ft = count + 5000
-                    m_m = err_cnt_array + 1000
-                    ft_ft = err_cnt_array + 5000
-                    d1000_m  = client.read_holding_registers(m_m)
-                    d5000_ft = client.read_holding_registers(ft_ft)
-                    d_meter = d1000_m.registers[0]
-                    d_feet = d5000_ft.registers[0]
-                    
-                    # 오류 유형
-                    type = "defect"
-
-                    # 이미지 저장 위치
-                    image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
-                    area = 0
-                    # area = int(mean_masks[len(mean_masks)-1])
-
-                    detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
-                    # time.sleep(1)
-           
-            # Repeat the same process after every 10 milliseconds
-            label_camera1.after(30, check_start)
-
-                    ######  tkinter  end   ######
+                        ######  tkinter  end   ######
+            except Exception as e:
+                print(f"===========ERROR==========: {e}")
+                # traceback.print_exc(file=sys.stdout)
 
         except Exception as e:
             # print(f"===========ERROR==========: {e}")
