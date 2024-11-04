@@ -158,6 +158,56 @@ entry_confidence.place(x=120, y=100)
 btn_confidence = Button(win, text="Change", command=confidence_change) 
 btn_confidence.place(x=200, y=100)
 
+# 처리 속도 라벨
+label_speed1 = Label(win)
+label_speed1.config(text = "처리속도(ms): ")
+label_speed1.place(x=20, y=120)
+# label_cable2.pack()
+
+# Confidence 값
+value_speed1 = Label(win)
+value_speed1.config(text = "준비 중")
+value_speed1.place(x=120, y=120)
+def show_speed1(speed):
+    speed = speed / 1000
+    speed = f"{speed:,.0f} ms"
+    value_speed1.config(text = speed)
+# value_cable2.pack()
+
+# 처리 속도 라벨
+label_speed2 = Label(win)
+label_speed2.config(text = "처리속도(fps): ")
+label_speed2.place(x=20, y=140)
+# label_cable2.pack()
+
+# Confidence 값
+value_speed2 = Label(win)
+value_speed2.config(text = "준비 중")
+value_speed2.place(x=120, y=140)
+def show_speed2(speed):
+    speed = 1 / (speed / 1000000)
+    speed = f"{speed:,.0f} fps"
+    value_speed2.config(text = speed)
+# value_cable2.pack()
+
+
+# 처리 속도 라벨
+label_speed3 = Label(win)
+label_speed3.config(text = "최대처리(cm/s): ")
+label_speed3.place(x=20, y=160)
+# label_cable2.pack()
+
+# Confidence 값
+value_speed3 = Label(win)
+value_speed3.config(text = "준비 중")
+value_speed3.place(x=120, y=160)
+def show_speed3(speed):
+    speed = 1 / (speed / 1000000)
+    speed = speed * 6
+    speed = f"{speed:,.0f} cm/s"
+    value_speed3.config(text = speed)
+# value_cable2.pack()
+
 
 # # Create a button to open the camera in GUI app 
 # btn_open = Button(win, text="Reset Start button", command=manual_reset) 
@@ -397,7 +447,7 @@ def check_start():
         
         # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
 
-        confidence_init() 
+        # confidence_init() 
         detect_camera()
 
         
@@ -494,6 +544,9 @@ def show_camera():
         label_camera1.after(30, check_start)
                 ######  tkinter  end   ###### 
 
+def difference(before, after):
+    diff = after - before
+    return diff
 
 def detect_camera():
     global s_time, count, client
@@ -509,6 +562,10 @@ def detect_camera():
     # makedirs(path)
     # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
     # makedirs(path)
+
+
+    global time3, time4
+    time3 = int(date.get_time_millisec())
 
     # 제품번호 material_number 가져오기
     try:
@@ -541,7 +598,6 @@ def detect_camera():
         # traceback.print_exc(file=sys.stdout)
         logging.error(traceback.format_exc())
         pass
-
 
     if cam_on:
         try:
@@ -640,11 +696,18 @@ def detect_camera():
 
                         detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
                         # time.sleep(1)
-            
+
+                time4 = int(date.get_time_millisec())
+                diff = difference(time3, time4)
+                show_speed1(diff)
+                show_speed2(diff)
+                show_speed3(diff)
+
                 # Repeat the same process after every 10 milliseconds
                 label_camera1.after(30, check_start)
 
                         ######  tkinter  end   ######
+                        
             except Exception as e:
                 print(f"===========ERROR==========: {e}")
                 # traceback.print_exc(file=sys.stdout)
