@@ -75,13 +75,13 @@ st.markdown("""
         margin-top: -100px;  /* 필요한 만큼 값 조정 */
     }
     .custom-title {
-        font-size: 20px;  /* 원하는 크기로 조정 */
+        font-size: 30px;  /* 원하는 크기로 조정 */
         font-weight: bold;
         margin-top: 0;
         text-align: left;
     }
     .custom-label {
-        font-size: 16px;  /* 원하는 크기로 조정 */
+        font-size: 20px;  /* 원하는 크기로 조정 */
         font-weight: bold; 
     }
      .flex-container {
@@ -89,11 +89,11 @@ st.markdown("""
         align-items: center;
     }
     .flex-container .label {
-        font-size: 16px;
+        font-size: 20px;
         font-weight: bold;
     }
     .flex-container .count {
-        font-size: 16px;
+        font-size: 20px;
         margin-left: 8px;
     }
     .responsive-image {
@@ -118,8 +118,7 @@ st.markdown("<h1 class='custom-title'>불량품 탐지 데이터 조회</h1>", u
 #st.title("불량품 탐지 데이터 조회")
 
 # 좁은 간격을 위한 칼럼 설정
-# col1, col2, col3, col4, col5, col6, col7 = st.columns([0.4, 1.0, 0.4, 1.0, 1.0, 0.5, 0.5])
-col1, col2, col3, col4, col5, col6, col7 = st.columns([0.5, 0.5, 0.5, 0.5, 0.7, 0.7, 0.5])
+col1, col2, col3, col4, col5, col6, col7 = st.columns([0.4, 1.0, 0.4, 1.0, 1.0, 0.5, 0.5])
 
 # 조회일자
 with col1:
@@ -181,7 +180,7 @@ with col6:
     )
 
 # 컬럼명을 변경
-df.columns = ["검출시작시간", "검출시간", "순번", "발견지점", "유형", "제조번호", "넓이", "이미지"]
+df.columns = ["불량검출시작시간", "불량검출시간", "순번", "발견지점", "유형", "제조번호", "넓이", "이미지"]
 
 # 유형 필터링 적용
 if type_filter == "defect":
@@ -210,23 +209,14 @@ gb = GridOptionsBuilder.from_dataframe(df)
 gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=True)
 
 # 컬럼 너비 설정
-# gb.configure_column("불량검출시작시간", width=130)
-# gb.configure_column("불량검출시간", width=130)
-# gb.configure_column("순번", width=30)
-# gb.configure_column("발견지점", width=80)
-# gb.configure_column("유형", width=50)
-# gb.configure_column("제조번호", width=120)
-# gb.configure_column("넓이", width=100)
-# gb.configure_column("이미지", width=150)
-
-gb.configure_column("검출시작시간", width=120)
-gb.configure_column("검출시간", width=80)
-gb.configure_column("순번", width=60)
+gb.configure_column("불량검출시작시간", width=130)
+gb.configure_column("불량검출시간", width=130)
+gb.configure_column("순번", width=30)
 gb.configure_column("발견지점", width=80)
-gb.configure_column("유형", width=60)
-gb.configure_column("제조번호", width=80)
-gb.configure_column("넓이", width=60)
-gb.configure_column("이미지", width=180)
+gb.configure_column("유형", width=50)
+gb.configure_column("제조번호", width=120)
+gb.configure_column("넓이", width=100)
+gb.configure_column("이미지", width=150)
 
 # 선택 모드 설정 (체크박스)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
@@ -238,7 +228,7 @@ grid_response = AgGrid(
     df,
     gridOptions=grid_options,
     update_mode=GridUpdateMode.SELECTION_CHANGED,
-    height=150,
+    height=220,
     theme='streamlit',
     enable_enterprise_modules=False,
     fit_columns_on_grid_load=True,
@@ -329,7 +319,7 @@ with st.container():
             else:
                 st.error("경로에 날짜 정보를 찾을 수 없습니다.")
 
-        st.session_state['image_pk'] = f'{selected_data["검출시간"]}'
+        st.session_state['image_pk'] = f'{selected_data["불량검출시간"]}'
 
         # 이미지 크기 조정 및 표시
         if st.session_state['image_url']:

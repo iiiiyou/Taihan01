@@ -67,35 +67,6 @@ def image_to_base64(image_path):
 # CSS 스타일 정의
 st.markdown("""
     <style>
-    /* 타이틀 위의 공백 제거 */
-    .main .block-container {
-        padding-top: 1.5rem;  /* 여백을 줄이려면 값을 줄임 */
-    }
-    .css-18e3th9 {
-        margin-top: -100px;  /* 필요한 만큼 값 조정 */
-    }
-    .custom-title {
-        font-size: 20px;  /* 원하는 크기로 조정 */
-        font-weight: bold;
-        margin-top: 0;
-        text-align: left;
-    }
-    .custom-label {
-        font-size: 16px;  /* 원하는 크기로 조정 */
-        font-weight: bold; 
-    }
-     .flex-container {
-        display: flex;
-        align-items: center;
-    }
-    .flex-container .label {
-        font-size: 16px;
-        font-weight: bold;
-    }
-    .flex-container .count {
-        font-size: 16px;
-        margin-left: 8px;
-    }
     .responsive-image {
         max-width: 100%;
         height: auto;
@@ -110,21 +81,15 @@ st.markdown("""
     </style>
 """, unsafe_allow_html=True)
 
-# 타이틀을 HTML로 직접 추가
-#st.markdown("<h1 style='margin-top: 0; text-align: left;'>불량품 탐지 데이터 조회</h1>", unsafe_allow_html=True)
-st.markdown("<h1 class='custom-title'>불량품 탐지 데이터 조회</h1>", unsafe_allow_html=True)
-
 # Streamlit 앱
-#st.title("불량품 탐지 데이터 조회")
+st.title("불량품 탐지 데이터 조회")
 
 # 좁은 간격을 위한 칼럼 설정
-# col1, col2, col3, col4, col5, col6, col7 = st.columns([0.4, 1.0, 0.4, 1.0, 1.0, 0.5, 0.5])
-col1, col2, col3, col4, col5, col6, col7 = st.columns([0.5, 0.5, 0.5, 0.5, 0.7, 0.7, 0.5])
+col1, col2, col3, col4, col5, col6, col7 = st.columns([0.4, 1.0, 0.4, 1.0, 1.0, 0.5, 0.5])
 
 # 조회일자
 with col1:
-    #st.markdown("### 조회일자:")
-    st.markdown("<span class='custom-label'>조회일자:</span>", unsafe_allow_html=True)
+    st.markdown("### 조회일자:")
 
 with col2:
     start_date = st.date_input("조회 시작일", value=date.today(), label_visibility="collapsed")
@@ -139,8 +104,7 @@ with col2:
 
 # 유형 선택
 with col3:
-    #st.markdown("### 유형 선택:")
-    st.markdown("<span class='custom-label'>유형 선택:</span>", unsafe_allow_html=True)
+    st.markdown("### 유형 선택:")
 with col4:
     type_filter = st.selectbox("유형 선택", ["전체", "defect", "area"], index=0, label_visibility="collapsed")
   
@@ -171,17 +135,18 @@ else:
 
 with col6:
     st.markdown(
-        """
-        <div class="flex-container">
-            <span class="label">데이터 건수:</span>
-            <span class="count">{}</span>
-        </div>
-        """.format(len(df)),
+        f"<h4 style='text-align: right; display: inline-block; padding-right: 10px;'>데이터 건수:</h4>",
         unsafe_allow_html=True
     )
 
+with col7:
+    st.markdown(
+    f"<h4 style='text-align: right; display: inline-block;'>{len(df)}</h4>",
+    unsafe_allow_html=True
+    )
+
 # 컬럼명을 변경
-df.columns = ["검출시작시간", "검출시간", "순번", "발견지점", "유형", "제조번호", "넓이", "이미지"]
+df.columns = ["불량검출시작시간", "불량검출시간", "순번", "발견지점", "유형", "제조번호", "넓이", "이미지"]
 
 # 유형 필터링 적용
 if type_filter == "defect":
@@ -210,23 +175,14 @@ gb = GridOptionsBuilder.from_dataframe(df)
 gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=True)
 
 # 컬럼 너비 설정
-# gb.configure_column("불량검출시작시간", width=130)
-# gb.configure_column("불량검출시간", width=130)
-# gb.configure_column("순번", width=30)
-# gb.configure_column("발견지점", width=80)
-# gb.configure_column("유형", width=50)
-# gb.configure_column("제조번호", width=120)
-# gb.configure_column("넓이", width=100)
-# gb.configure_column("이미지", width=150)
-
-gb.configure_column("검출시작시간", width=120)
-gb.configure_column("검출시간", width=80)
-gb.configure_column("순번", width=60)
+gb.configure_column("불량검출시작시간", width=130)
+gb.configure_column("불량검출시간", width=130)
+gb.configure_column("순번", width=30)
 gb.configure_column("발견지점", width=80)
-gb.configure_column("유형", width=60)
-gb.configure_column("제조번호", width=80)
-gb.configure_column("넓이", width=60)
-gb.configure_column("이미지", width=180)
+gb.configure_column("유형", width=50)
+gb.configure_column("제조번호", width=120)
+gb.configure_column("넓이", width=100)
+gb.configure_column("이미지", width=150)
 
 # 선택 모드 설정 (체크박스)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
@@ -238,7 +194,7 @@ grid_response = AgGrid(
     df,
     gridOptions=grid_options,
     update_mode=GridUpdateMode.SELECTION_CHANGED,
-    height=150,
+    height=400,
     theme='streamlit',
     enable_enterprise_modules=False,
     fit_columns_on_grid_load=True,
@@ -289,7 +245,9 @@ with st.container():
                     # 동일 날짜의 original 폴더에 이미지가 있는지 확인
                     image_base_path = os.path.join(origin_folder, f"{original_image_url.split('.')[0]}")  # 기본 경로 설정
 
-                    if (os.path.exists(f"{image_base_path.split('.')[0]}.jpg") ):
+                    if (os.path.exists(f"{image_base_path.split('.')[0]}-0.jpg") or
+                        os.path.exists(f"{image_base_path.split('.')[0]}-1.jpg") or
+                        os.path.exists(f"{image_base_path.split('.')[0]}-2.jpg")):
                         #st.write(f"Process: 1") 
                         # 이미지가 있는 경우 해당 경로 저장
                         st.session_state['origin_image_url'] = original_image_url
@@ -303,7 +261,9 @@ with st.container():
                         
                         #st.write(f"Process: 2")   
                         # 하루 전 날짜의 original 폴더에 이미지가 있는지 확인
-                        if (os.path.exists(f"{previous_image_base_path.split('.')[0]}.jpg")):
+                        if (os.path.exists(f"{previous_image_base_path.split('.')[0]}-0.jpg") or
+                            os.path.exists(f"{previous_image_base_path.split('.')[0]}-1.jpg") or
+                            os.path.exists(f"{previous_image_base_path.split('.')[0]}-2.jpg")):
                             #st.write(f"Process: 3") 
                             
                             # 하루 전 날짜 이미지가 있는 경우 해당 경로 저장
@@ -319,7 +279,9 @@ with st.container():
                     # 먼저 동일 날짜의 original 폴더에서 이미지 찾기
                     if st.session_state['origin_image_url']:
                         original_image_urls = [
-                        os.path.join(origin_folder, f"{st.session_state['origin_image_url'].split('.')[0]}.jpg")
+                        os.path.join(origin_folder, f"{st.session_state['origin_image_url'].split('.')[0]}-0.jpg"),
+                        os.path.join(origin_folder, f"{st.session_state['origin_image_url'].split('.')[0]}-1.jpg"),
+                        os.path.join(origin_folder, f"{st.session_state['origin_image_url'].split('.')[0]}-2.jpg"),
                     ]
                     else:
                         st.error("원본 이미지 파일이 존재하지 않습니다")
@@ -329,13 +291,12 @@ with st.container():
             else:
                 st.error("경로에 날짜 정보를 찾을 수 없습니다.")
 
-        st.session_state['image_pk'] = f'{selected_data["검출시간"]}'
+        st.session_state['image_pk'] = f'{selected_data["불량검출시간"]}'
 
         # 이미지 크기 조정 및 표시
         if st.session_state['image_url']:
-            col1, col2 = st.columns(2)  # 2개의 컬럼 생성
-
-            # 첫 번째 컬럼: box 폴더의 이미지 1장 표시
+            col1, col2, col3, col4 = st.columns(4)  # 4개의 컬럼 생성
+            
             with col1:
                 if os.path.exists(st.session_state['image_url']):
                     img_base64 = image_to_base64(st.session_state['image_url'])
@@ -349,22 +310,22 @@ with st.container():
                 else:
                     st.error(f"이미지 파일이 존재하지 않습니다: {st.session_state['image_url']}")
 
-            # 두 번째 컬럼: Original 폴더의 이미지 1장 표시
-            with col2:
-                if st.session_state['origin_image_url']:
-                    if original_image_urls[0] and os.path.exists(original_image_urls[0]):  # 첫 번째 Original 이미지 사용
-                        origin_img_base64 = image_to_base64(original_image_urls[0])
-                        st.markdown(
-                            f'<div class="image-container">'
-                            f'<img src="data:image/png;base64,{origin_img_base64}" class="responsive-image" />'
-                            f'<div class="caption">camera-0</div>'
-                            f'</div>',
-                            unsafe_allow_html=True
-                        )
+            for i in range(3):
+                with [col2, col3, col4][i]:  # 두 번째, 세 번째, 네 번째 컬럼 사용
+                    if st.session_state['origin_image_url']:
+                        if original_image_urls[i] and os.path.exists(original_image_urls[i]):
+                            origin_img_base64 = image_to_base64(original_image_urls[i])
+                            st.markdown(
+                                f'<div class="image-container">'
+                                f'<img src="data:image/png;base64,{origin_img_base64}" class="responsive-image" />'
+                                f'<div class="caption">camera-{i}</div>'
+                                f'</div>',
+                                unsafe_allow_html=True
+                            )
+                        else:
+                            st.error(f"원본 이미지 파일이 존재하지 않습니다: {original_image_urls[i]}")
                     else:
-                        st.error(f"원본 이미지 파일이 존재하지 않습니다: {original_image_urls[0]}")
-                else:
-                    st.error("원본 이미지 파일이 존재하지 않습니다.")
+                        st.error("원본 이미지 파일이 존재하지 않습니다.")
     else:
         # 이미지가 선택되지 않은 경우 아무것도 표시하지 않음
         st.session_state['image_url'] = None
