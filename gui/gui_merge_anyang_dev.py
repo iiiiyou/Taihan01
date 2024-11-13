@@ -324,6 +324,7 @@ def startbtn():
         client.write_coils(0x01,0)
     else:
         client.write_coils(0x01,1)
+    start_cam()
 #Start 버튼 수동 실행 끝
 
 
@@ -721,10 +722,11 @@ def detect_camera():
 
 def start_cam():
     global cam_on
-    # stop_cam()
-    cam_on = True
-    # open_camera()
-    check_start()
+    if cam_on == False :
+        # stop_cam()
+        cam_on = True
+        # open_camera()
+        check_start()
 
 def stop_cam():
     global cam_on
