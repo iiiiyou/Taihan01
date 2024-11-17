@@ -75,13 +75,13 @@ st.markdown("""
         margin-top: -100px;  /* 필요한 만큼 값 조정 */
     }
     .custom-title {
-        font-size: 30px;  /* 원하는 크기로 조정 */
+        font-size: 20px;  /* 원하는 크기로 조정 */
         font-weight: bold;
         margin-top: 0;
         text-align: left;
     }
     .custom-label {
-        font-size: 20px;  /* 원하는 크기로 조정 */
+        font-size: 16px;  /* 원하는 크기로 조정 */
         font-weight: bold; 
     }
      .flex-container {
@@ -89,11 +89,11 @@ st.markdown("""
         align-items: center;
     }
     .flex-container .label {
-        font-size: 20px;
+        font-size: 16px;
         font-weight: bold;
     }
     .flex-container .count {
-        font-size: 20px;
+        font-size: 16px;
         margin-left: 8px;
     }
     .responsive-image {
@@ -118,7 +118,8 @@ st.markdown("<h1 class='custom-title'>불량품 탐지 데이터 조회</h1>", u
 #st.title("불량품 탐지 데이터 조회")
 
 # 좁은 간격을 위한 칼럼 설정
-col1, col2, col3, col4, col5, col6, col7, col8 = st.columns([0.4, 1.0, 0.4, 1.0, 0.3, 0.8, 0.7, 0.5])
+# col1, col2, col3, col4, col5, col6, col7 = st.columns([0.4, 1.0, 0.4, 1.0, 1.0, 0.5, 0.5])
+col1, col2, col3, col4, col5, col6, col7 = st.columns([0.5, 0.5, 0.5, 0.5, 0.7, 0.7, 0.5])
 
 # 조회일자
 with col1:
@@ -152,37 +153,23 @@ with col4:
         st.session_state['last_start_date'] = start_date
 
 # 날짜를 정수로 변환
-    end_date = start_date + timedelta(days=1)
-    start_date_int = int(start_date.strftime("%Y%m%d%H%M%S"))
-    end_date_int = int(end_date.strftime("%Y%m%d%H%M%S"))
-    start_date_str = start_date.strftime("%Y%m%d")
+end_date = start_date + timedelta(days=1)
+start_date_int = int(start_date.strftime("%Y%m%d%H%M%S"))
+end_date_int = int(end_date.strftime("%Y%m%d%H%M%S"))
+start_date_str = start_date.strftime("%Y%m%d")
 
-with col5:
-    # 조회 버튼
-    if st.button("조회"):
-        # 폴더 경로 설정
-        folder_name = r"C:\source\sql"
-        db_folder = os.path.join(folder_name)
+# 폴더 경로 설정
+folder_name = r"C:\source\sql"
+db_folder = os.path.join(folder_name)
 
-        # 데이터 로드
-        rows, col_names = fetch_data(start_date_int, end_date_int, db_folder)
-        
-        # 가져온 데이터를 세션 상태에 저장하여, 새로고침이 아닌 조회 버튼 클릭으로만 업데이트되도록
-        st.session_state['data'] = rows
-        st.session_state['col_names'] = col_names
-
-    else:
-        # 조회 버튼이 클릭되지 않은 경우 이전 데이터를 유지합니다.
-        rows = st.session_state.get('data', [])
-        col_names = st.session_state.get('col_names', [])
-
-
+# 데이터 로드
+rows, col_names = fetch_data(start_date_int, end_date_int, db_folder)
 if rows:
     df = pd.DataFrame(rows, columns=col_names)
 else:
     df = pd.DataFrame(columns=["s_time", "d_time", "seq2", "d_meter", "type", "material_number", "area", "image"])  # 빈 데이터프레임에 기본 컬럼 추가
 
-with col7:
+with col6:
     st.markdown(
         """
         <div class="flex-container">
@@ -194,7 +181,7 @@ with col7:
     )
 
 # 컬럼명을 변경
-df.columns = ["불량검출시작시간", "불량검출시간", "순번", "발견지점", "유형", "제조번호", "넓이", "이미지"]
+df.columns = ["검출시작시간", "검출시간", "순번", "발견지점", "유형", "제조번호", "넓이", "이미지"]
 
 # 유형 필터링 적용
 if type_filter == "defect":
@@ -208,7 +195,7 @@ if not df.empty:
     current_time = datetime.now().strftime("%Y%m%d_%H%M%S")
     file_name = f"data_{current_time}.xlsx"
     
-    with col6:
+    with col5:
         st.download_button(
             label="Excel 다운로드",
             data=excel_file,
@@ -223,14 +210,23 @@ gb = GridOptionsBuilder.from_dataframe(df)
 gb.configure_default_column(groupable=True, value=True, enableRowGroup=True, editable=True)
 
 # 컬럼 너비 설정
-gb.configure_column("불량검출시작시간", width=130)
-gb.configure_column("불량검출시간", width=130)
-gb.configure_column("순번", width=30)
+# gb.configure_column("불량검출시작시간", width=130)
+# gb.configure_column("불량검출시간", width=130)
+# gb.configure_column("순번", width=30)
+# gb.configure_column("발견지점", width=80)
+# gb.configure_column("유형", width=50)
+# gb.configure_column("제조번호", width=120)
+# gb.configure_column("넓이", width=100)
+# gb.configure_column("이미지", width=150)
+
+gb.configure_column("검출시작시간", width=120)
+gb.configure_column("검출시간", width=80)
+gb.configure_column("순번", width=60)
 gb.configure_column("발견지점", width=80)
-gb.configure_column("유형", width=50)
-gb.configure_column("제조번호", width=120)
-gb.configure_column("넓이", width=100)
-gb.configure_column("이미지", width=150)
+gb.configure_column("유형", width=60)
+gb.configure_column("제조번호", width=80)
+gb.configure_column("넓이", width=60)
+gb.configure_column("이미지", width=180)
 
 # 선택 모드 설정 (체크박스)
 gb.configure_selection(selection_mode="single", use_checkbox=True)
@@ -242,7 +238,7 @@ grid_response = AgGrid(
     df,
     gridOptions=grid_options,
     update_mode=GridUpdateMode.SELECTION_CHANGED,
-    height=220,
+    height=150,
     theme='streamlit',
     enable_enterprise_modules=False,
     fit_columns_on_grid_load=True,
@@ -333,7 +329,7 @@ with st.container():
             else:
                 st.error("경로에 날짜 정보를 찾을 수 없습니다.")
 
-        st.session_state['image_pk'] = f'{selected_data["불량검출시간"]}'
+        st.session_state['image_pk'] = f'{selected_data["검출시간"]}'
 
         # 이미지 크기 조정 및 표시
         if st.session_state['image_url']:
