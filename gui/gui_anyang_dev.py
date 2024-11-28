@@ -740,6 +740,7 @@ def start_cam():
         # stop_cam()
         cam_on = True
         # open_camera()
+        show_area_base("검사 중")
         check_start()
 
 def stop_cam():
@@ -747,19 +748,19 @@ def stop_cam():
     # modbus.write_detected([1,0,0], client)
     # print("Sent modbus [1,0,0]")
     cam_on = False
-    show_area_base("일시중지")
+    show_area_base("일시정지")
 
 
 ######  tkinter  start   ######
 
 # Create a button to open the camera in GUI app 
-btn_open = Button(win, text="      시작      ", command=start_cam) 
+btn_open = Button(win, text="일시정지 해제", command=start_cam) 
 # btn_open.grid(row=0,column=0) 
 # btn_open.pack()
 btn_open.place(x=2, y=2)
 
 # Create a button to close the camera in GUI app 
-btn_stop = Button(win, text="   일시중지   ", command=stop_cam) 
+btn_stop = Button(win, text="   일시정지   ", command=stop_cam) 
 # btn_open.grid(row=0,column=0) 
 # btn_close.pack()
 btn_stop.place(x=92, y=2)
