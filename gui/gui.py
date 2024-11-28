@@ -559,6 +559,10 @@ def detect_camera():
     makedirs(path)
     path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
     makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/Original/'
+    makedirs(path)
     # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
     # makedirs(path)
     # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
@@ -649,9 +653,12 @@ def detect_camera():
 
                 global time1, time2
                 time1 = int(date.get_time_millisec())
+                conf_max=0
 
                 if (result[0].boxes.shape[0] > 0) and True :
                 # if (result[0].boxes.shape[0] > 0) and (time1 - time2 > (100000*1)) : # 0.1초 * 5
+
+                    conf_max = max(result[0].boxes.conf)
 
                     # 같은 위치인가 아닌가 확인하기 위해 detect 된 object 위치 파악
                     # 여러 object가 발견되도 첫번째 detect 된 항목만 체크
@@ -659,44 +666,51 @@ def detect_camera():
                     # Convert to integers for drawing
                     x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
                     if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
-                        time2 = int(date.get_time_millisec())
-                        detected_time = date.get_time_millisec()[0:16]
-                        detected_date = date.get_date_in_yyyymmdd()
-                        cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
-                        cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
-                        count = count + 1
+                        if(conf_max>0.7):
+                            time2 = int(date.get_time_millisec())
+                            detected_time = date.get_time_millisec()[0:16]
+                            detected_date = date.get_date_in_yyyymmdd()
+                            cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
+                            cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
+                            count = count + 1
 
-                        # PLC에서 제품 에러 수 가져오기
-                        result_err_cnt= client.read_holding_registers(0x0008)
-                        err_cnt_array = int(result_err_cnt.registers[0])+1
+                            # PLC에서 제품 에러 수 가져오기
+                            result_err_cnt= client.read_holding_registers(0x0008)
+                            err_cnt_array = int(result_err_cnt.registers[0])+1
 
-                        # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
+                            # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
 
-                        # 감지 시간 저장
-                        d_time = int(date.get_time_in_mmddss())
+                            # 감지 시간 저장
+                            d_time = int(date.get_time_in_mmddss())
 
-                        # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
-                        client.write_coils(0x0020,1)
-                        client.write_coils(0x0020,0)
-                        # m_m = count + 1000
-                        # ft_ft = count + 5000
-                        m_m = err_cnt_array + 1000
-                        ft_ft = err_cnt_array + 5000
-                        d1000_m  = client.read_holding_registers(m_m)
-                        d5000_ft = client.read_holding_registers(ft_ft)
-                        d_meter = d1000_m.registers[0]
-                        d_feet = d5000_ft.registers[0]
-                        
-                        # 오류 유형
-                        type = "defect"
+                            # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                            client.write_coils(0x0020,1)
+                            client.write_coils(0x0020,0)
+                            # m_m = count + 1000
+                            # ft_ft = count + 5000
+                            m_m = err_cnt_array + 1000
+                            ft_ft = err_cnt_array + 5000
+                            d1000_m  = client.read_holding_registers(m_m)
+                            d5000_ft = client.read_holding_registers(ft_ft)
+                            d_meter = d1000_m.registers[0]
+                            d_feet = d5000_ft.registers[0]
+                            
+                            # 오류 유형
+                            type = "defect"
 
-                        # 이미지 저장 위치
-                        image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
-                        area = 0
-                        # area = int(mean_masks[len(mean_masks)-1])
+                            # 이미지 저장 위치
+                            image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
+                            area = 0
+                            # area = int(mean_masks[len(mean_masks)-1])
 
-                        detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
-                        # time.sleep(1)
+                            detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
+                            # time.sleep(1)
+                        else:
+                            detected_time = date.get_time_millisec()[0:16]
+                            detected_date = date.get_date_in_yyyymmdd()
+                            cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
+                            cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
+                            
 
                 time4 = int(date.get_time_millisec())
                 diff = difference(time3, time4)
@@ -733,24 +747,25 @@ def stop_cam():
     # modbus.write_detected([1,0,0], client)
     # print("Sent modbus [1,0,0]")
     cam_on = False
+    show_area_base("일시중지")
 
 
 ######  tkinter  start   ######
 
 # Create a button to open the camera in GUI app 
-btn_open = Button(win, text="Start Camera", command=start_cam) 
+btn_open = Button(win, text="      시작      ", command=start_cam) 
 # btn_open.grid(row=0,column=0) 
 # btn_open.pack()
 btn_open.place(x=2, y=2)
 
 # Create a button to close the camera in GUI app 
-btn_stop = Button(win, text="Stop Camera", command=stop_cam) 
+btn_stop = Button(win, text="   일시중지   ", command=stop_cam) 
 # btn_open.grid(row=0,column=0) 
 # btn_close.pack()
 btn_stop.place(x=92, y=2)
 
 # Create a button to close the camera in GUI app 
-btn_close = Button(win, text="Close Program", command=win.destroy) 
+btn_close = Button(win, text="프로그램 종료", command=win.destroy) 
 # btn_open.grid(row=0,column=0) 
 # btn_close.pack()
 btn_close.place(x=182, y=2)
