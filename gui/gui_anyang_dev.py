@@ -329,7 +329,7 @@ def startbtn():
 
 
 #manual_reset 시작
-def manual_reset():
+def manual_reset():   
     global m01, m53, m54, m53m, m54m, s_time, count, client
     if not(client.connected):
         client = ModbusTcpClient('192.168.102.20' ,502)
@@ -337,7 +337,8 @@ def manual_reset():
     client.write_coils(0x53,0)
     client.write_coils(0x54,0)
 
-    # 화면에 현재 cable area 표시
+    # 화면에 현재 cable area 표시 
+    start_btn_check()
     show_area_base("준비 중")
     show_mask_area("준비 중")
 
@@ -736,6 +737,7 @@ def detect_camera():
 
 def start_cam():
     global cam_on
+    start_btn_check()
     if cam_on == False :
         # stop_cam()
         cam_on = True
