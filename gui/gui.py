@@ -740,7 +740,10 @@ def start_cam():
         # stop_cam()
         cam_on = True
         # open_camera()
-        show_area_base("검사 중")
+        if m53 + m54 == 1 :
+            show_area_base("검사 중")
+        else :
+            show_area_base("준비 중")
         check_start()
 
 def stop_cam():
