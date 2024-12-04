@@ -690,11 +690,11 @@ def detect_camera():
                             # m_m = count + 1000
                             # ft_ft = count + 5000
                             m_m = err_cnt_array + 1000
-                            ft_ft = err_cnt_array + 5000
+                            # ft_ft = err_cnt_array + 5000
                             d1000_m  = client.read_holding_registers(m_m)
-                            d5000_ft = client.read_holding_registers(ft_ft)
+                            # d5000_ft = client.read_holding_registers(ft_ft)
                             d_meter = d1000_m.registers[0]
-                            d_feet = d5000_ft.registers[0]
+                            # d_feet = d5000_ft.registers[0]
                             
                             # 오류 유형
                             type = "defect"
