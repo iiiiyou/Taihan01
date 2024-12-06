@@ -667,7 +667,7 @@ def detect_camera():
                     # Convert to integers for drawing
                     x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
                     if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
-                        if(conf_max>0.7):
+                        if(conf_max>=0.7):
                             time2 = int(date.get_time_millisec())
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
