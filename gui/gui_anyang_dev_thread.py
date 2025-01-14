@@ -23,6 +23,7 @@ from pymodbus.client import ModbusTcpClient
 from pymodbus.transaction import *
 import time
 import logging
+import threading
 
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
@@ -273,6 +274,10 @@ value_m04.place(x=120, y=480)
 def show_m04_value(m04_value):
     value_m04.config(text = m04_value)
 # value_m54.pack()
+
+# Threading image save
+def save_image(filename, frame):
+    cv2.imwrite(filename, frame)
 
 
 def start_btn_check():
@@ -534,7 +539,6 @@ def show_camera():
             photo = ImageTk.PhotoImage(image=cap_img)
             label_camera1.photo_image = photo
             label_camera1.configure(image=photo)
-            camera_frame_log(date.get_time_millisec(), "show_camera", "0")
 
         except Exception as e:
             # print(f"===========ERROR==========: {e}")
@@ -556,7 +560,6 @@ def camera_frame_log(ctime, detected, confi):
     file_path = "C:/source/log/camera_"+camera_log_start_time+".txt"
     with open(file_path, "a") as file:
         file.write(ctime + "__" + detected + "__" + str(confi) + "\n")
-
 
 def detect_camera():
     global s_time, count, client
@@ -645,21 +648,6 @@ def detect_camera():
 
                 # Run YOLOv8 inference on the frame
                 # results1 = model(img1)
-
-
-                # Load the YOLO11 model
-                # model = YOLO("yolo11n.pt")
-
-                # Export the model to TensorRT format
-                # model.export(format="engine")  # creates 'yolo11n.engine'
-
-                # Load the exported TensorRT model
-                #tensorrt_model = YOLO("C:/source/models/20241028_taihanfiber_7-1_best_a.engine", task='segment')
-
-                # Run inference
-                # results = tensorrt_model("https://ultralytics.com/images/bus.jpg")
-                # result = tensorrt_model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence)
-
                 result = model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence)
 
                 # Visualize the results on the frame
@@ -699,8 +687,12 @@ def detect_camera():
                             time2 = int(date.get_time_millisec())
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
-                            cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
+                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread1.start()
+                            # cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
+                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread2.start()
+                            # cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
                             count = count + 1
 
                             # PLC에서 제품 에러 수 가져오기
@@ -738,11 +730,14 @@ def detect_camera():
                         else:
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                            cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
-                            # camera_frame_log(date.get_time_millisec(), "Detected:notsave_conf_max", conf_max)
+                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread3.start()
+                            # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
+                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread4.start()
+                            # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
                             camera_frame_log(date.get_time_millisec(), "Detected_<70", confidence)
-                    # camera_frame_log(date.get_time_millisec(), "Detected", result[0].boxes.conf)       
+                            
 
                 time4 = int(date.get_time_millisec())
                 diff = difference(time3, time4)
