@@ -23,6 +23,7 @@ from pymodbus.client import ModbusTcpClient
 from pymodbus.transaction import *
 import time
 import logging
+import threading
 
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
@@ -274,6 +275,18 @@ def show_m04_value(m04_value):
     value_m04.config(text = m04_value)
 # value_m54.pack()
 
+# Threading image save
+def save_image(filename, frame):
+    cv2.imwrite(filename, frame)
+
+# Threading save SQL
+def write_detected_sql(mmddhhnnss, serial_number, err_cnt_array, d_meter, type, d_time, image, area):
+    detect.write_sql(mmddhhnnss, serial_number, err_cnt_array, d_meter, type, d_time, image, area)
+
+# Threading image save
+def write_start_sql(mmddhhnnss, cable_area_base):
+    start.write_sql3(mmddhhnnss, cable_area_base)
+
 
 def start_btn_check():
     try:
@@ -445,7 +458,10 @@ def check_start():
         # mask_area_base_set()
         
         #SQL insert (시작시간)
-        start.write_sql3(mmddhhnnss, cable_area_base)
+        
+        start_sql_thread = threading.Thread(target=write_start_sql, args=(mmddhhnnss, cable_area_base))
+        start_sql_thread.start()
+        # start.write_sql3(mmddhhnnss, cable_area_base)
         
         # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
 
@@ -550,6 +566,12 @@ def difference(before, after):
     diff = after - before
     return diff
 
+camera_log_start_time = date.get_time_millisec()
+def camera_frame_log(ctime, detected, confi):
+    file_path = "C:/source/log/camera_"+camera_log_start_time+".txt"
+    with open(file_path, "a") as file:
+        file.write(ctime + "__" + detected + "__" + str(confi) + "\n")
+
 def detect_camera():
     global s_time, count, client
     grabResults = []
@@ -637,7 +659,7 @@ def detect_camera():
 
                 # Run YOLOv8 inference on the frame
                 # results1 = model(img1)
-                result = model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence)
+                result = model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence, half=True)
 
                 # Visualize the results on the frame
                 annotated_img = cv2.resize(result[0].plot(), (530,530))
@@ -656,6 +678,7 @@ def detect_camera():
                 time1 = int(date.get_time_millisec())
                 conf_max=0
 
+
                 if (result[0].boxes.shape[0] > 0) and True :
                 # if (result[0].boxes.shape[0] > 0) and (time1 - time2 > (100000*1)) : # 0.1초 * 5
 
@@ -666,13 +689,18 @@ def detect_camera():
                     x1, y1, w1, h1 = result[0].boxes.xywh[0]
                     # Convert to integers for drawing
                     x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
-                    if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
-                        if(conf_max>=0.7):
+                    if True: # 이미 발견되지 않았으면(detected list에 없으면)
+                    # if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
+                        if(conf_max>=0.70):
                             time2 = int(date.get_time_millisec())
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
-                            cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
+                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread1.start()
+                            # cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
+                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread2.start()
+                            # cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
                             count = count + 1
 
                             # PLC에서 제품 에러 수 가져오기
@@ -704,13 +732,20 @@ def detect_camera():
                             area = 0
                             # area = int(mean_masks[len(mean_masks)-1])
 
-                            detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
-                            # time.sleep(1)
+                            save_sql_thread = threading.Thread(target=write_detected_sql, args=(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area))
+                            save_sql_thread.start()
+
+                            # detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
+                            # time.sleep(1)    
                         else:
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                            cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
+                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread3.start()
+                            # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
+                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread4.start()
+                            # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
                             
 
                 time4 = int(date.get_time_millisec())
