@@ -461,6 +461,7 @@ def check_start():
         
         start_sql_thread = threading.Thread(target=write_start_sql, args=(mmddhhnnss, cable_area_base))
         start_sql_thread.start()
+        start_sql_thread.join()
         # start.write_sql3(mmddhhnnss, cable_area_base)
         
         # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
@@ -555,7 +556,7 @@ def show_camera():
             # print(f"===========ERROR==========: {e}")
             # traceback.print_exc(file=sys.stdout)
             logging.error(traceback.format_exc())
-            
+            pass
             win.destroy()
             # pass
         # Repeat the same process after every 10 milliseconds
@@ -643,6 +644,7 @@ def detect_camera():
                 except Exception as e:
                     # print(f"===========ERROR==========: {e}")
                     # traceback.print_exc(file=sys.stdout)
+                    logging.error(traceback.format_exc())
                     continue
 
 
@@ -697,9 +699,11 @@ def detect_camera():
                             detected_date = date.get_date_in_yyyymmdd()
                             save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
                             save_thread1.start()
+                            save_thread1.join()
                             # cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
                             save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img))
                             save_thread2.start()
+                            save_thread2.join()
                             # cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
                             count = count + 1
 
@@ -734,6 +738,7 @@ def detect_camera():
 
                             save_sql_thread = threading.Thread(target=write_detected_sql, args=(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area))
                             save_sql_thread.start()
+                            save_sql_thread.join()
 
                             # detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
                             # time.sleep(1)    
@@ -742,9 +747,11 @@ def detect_camera():
                             detected_date = date.get_date_in_yyyymmdd()
                             save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot()))
                             save_thread3.start()
+                            save_thread3.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
                             save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img))
                             save_thread4.start()
+                            save_thread4.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
                             
 
@@ -759,15 +766,21 @@ def detect_camera():
 
                         ######  tkinter  end   ######
                         
-            except Exception as e:
-                print(f"===========ERROR==========: {e}")
+            except AttributeError as e:
+                print(f"===========ERROR==========76: {e}")
                 # traceback.print_exc(file=sys.stdout)
-
+                logging.error(traceback.format_exc())
+                pass
+            except Exception as e:
+                print(f"===========ERROR==========763: {e}")
+                # traceback.print_exc(file=sys.stdout)
+                logging.error(traceback.format_exc())
+                pass
         except Exception as e:
             # print(f"===========ERROR==========: {e}")
             # traceback.print_exc(file=sys.stdout)
             logging.error(traceback.format_exc())
-            
+            pass
             win.destroy()
 
 def start_cam():
