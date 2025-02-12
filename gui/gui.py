@@ -24,11 +24,12 @@ from pymodbus.transaction import *
 import time
 import logging
 import threading
+import queue
 
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/20241028_taihanfiber_7-1_best_a.pt') # pruning 적용
+model = YOLO('C:/source/models/taihanfiber_9-1_20250212_yolov8s-seg_best.pt') # pruning 적용
 # model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
 imgsize = 640
 confidence = 0.5
@@ -510,6 +511,39 @@ def exposure_change():
     # print('camera bright:', int(np.mean(cams_bright_mean)), ', len:', len(cams_bright_mean))
 
 
+q= queue.Queue()
+
+def camara_img_merge():
+    grabResults = []
+    images, results, annotated_imgs = [], [], []
+    try:
+        for i in range(len(cameras)):
+            grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+            try: 
+                print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
+                if grabResults[i].GrabSucceeded():
+
+                    images.append(converter.Convert(grabResults[i]))
+                    images[i] = images[i].GetArray()
+                    images[i] = cv2.resize(images[i], (imgsize,imgsize))
+
+            except Exception as e:
+                # print(f"===========ERROR==========: {e}")
+                # traceback.print_exc(file=sys.stdout)
+                logging.error(traceback.format_exc())
+                pass
+                    
+        # 사진 3장 합치기
+        channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+        merge_img = imgmerge.merge(images, channel) # 합치기
+        q.put(merge_img)
+        
+    except Exception as e:
+        # print(f"===========ERROR==========: {e}")
+        # traceback.print_exc(file=sys.stdout)
+        logging.error(traceback.format_exc())
+        pass
+
 
 def show_camera():
     grabResults = []
@@ -518,26 +552,31 @@ def show_camera():
 
     if cam_on:
         try:
-            for i in range(len(cameras)):
-                grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-                try: 
-                    print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
-                    if grabResults[i].GrabSucceeded():
+            # for i in range(len(cameras)):
+            #     grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+            #     try: 
+            #         print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
+            #         if grabResults[i].GrabSucceeded():
 
-                        images.append(converter.Convert(grabResults[i]))
-                        images[i] = images[i].GetArray()
-                        images[i] = cv2.resize(images[i], (imgsize,imgsize))
+            #             images.append(converter.Convert(grabResults[i]))
+            #             images[i] = images[i].GetArray()
+            #             images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
-                except Exception as e:
-                    # print(f"===========ERROR==========: {e}")
-                    # traceback.print_exc(file=sys.stdout)
-                    logging.error(traceback.format_exc())
-                    continue
+            #     except Exception as e:
+            #         # print(f"===========ERROR==========: {e}")
+            #         # traceback.print_exc(file=sys.stdout)
+            #         logging.error(traceback.format_exc())
+            #         continue
             
                        
-            # 사진 3장 합치기
-            channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
-            merge_img = imgmerge.merge(images, channel) # 합치기
+            # # 사진 3장 합치기
+            # channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+            # merge_img = imgmerge.merge(images, channel) # 합치기
+            merge_start = threading.Thread(target=camara_img_merge,args=())
+            merge_start.start()
+            merge_start.join()
+
+            merge_img = q.get()
             # cv2.imshow('title1', merge_img)# cv2.resize(img1r, (330,330)))
             # cv2.waitKey(0)
 
@@ -630,28 +669,32 @@ def detect_camera():
 
     if cam_on:
         try:
-            for i in range(len(cameras)):
-                grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-                try:
-                    if grabResults[i].GrabSucceeded():
+            # for i in range(len(cameras)):
+            #     grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+            #     try:
+            #         if grabResults[i].GrabSucceeded():
 
-                        images.append(converter.Convert(grabResults[i]))
-                        images[i] = images[i].GetArray()
-                        images[i] = cv2.resize(images[i], (imgsize,imgsize))
+            #             images.append(converter.Convert(grabResults[i]))
+            #             images[i] = images[i].GetArray()
+            #             images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
 
-                        #### mask area end ####
-                except Exception as e:
-                    # print(f"===========ERROR==========: {e}")
-                    # traceback.print_exc(file=sys.stdout)
-                    logging.error(traceback.format_exc())
-                    continue
+            #             #### mask area end ####
+            #     except Exception as e:
+            #         # print(f"===========ERROR==========: {e}")
+            #         # traceback.print_exc(file=sys.stdout)
+            #         continue
 
 
             try:
-                # 사진 3장 합치기
-                channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
-                merge_img = imgmerge.merge(images, channel) # 합치기
+            #     # 사진 3장 합치기
+            #     channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+            #     merge_img = imgmerge.merge(images, channel) # 합치기
+                merge_start = threading.Thread(target=camara_img_merge,args=())
+                merge_start.start()
+                merge_start.join()
+
+                merge_img = q.get()
                 # cv2.imshow('title1', merge_img)# cv2.resize(img1r, (330,330)))
                 # cv2.waitKey(0)
                 
@@ -741,7 +784,7 @@ def detect_camera():
                             save_sql_thread.join()
 
                             # detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
-                            # time.sleep(1)    
+                            # time.sleep(1)
                         else:
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
