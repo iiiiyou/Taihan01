@@ -29,8 +29,9 @@ import queue
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/taihanfiber_9-1_20250212_yolov8s-seg_best.pt') # pruning 적용
-# model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
+# model = YOLO('C:/source/models/20241028_taihanfiber_7-1_best_a.pt') # pruning 적용
+# model = YOLO('C:/source/models/taihanfiber_9-1_20250212_yolov8s-seg_best.pt') # pruning 적용
+model = YOLO('C:/source/models/taihanfiber_11-2_20250218_yolov8s-seg_best.pt')
 imgsize = 640
 confidence = 0.5
 reset_confidence = 0.5
@@ -397,6 +398,33 @@ def is_detected(x):
         detected.append(x)
         return True
 
+
+# 제품 생산 시작시간 가져오기
+def get_produce_start_time():
+        # 시작 시간 가져오기
+        # s_time = int(date.get_date_time())
+        
+        # 제품 시작시간 가져오기
+        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
+        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
+        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
+        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
+        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
+        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
+        yyyy = result_d632.registers[0]
+        mm = result_d621.registers[0]
+        dd = result_d622.registers[0]
+        hh = result_d623.registers[0]
+        nn = result_d624.registers[0]
+        ss = result_d625.registers[0]
+        mm = str(mm).zfill(2)
+        dd = str(dd).zfill(2)
+        hh = str(hh).zfill(2)
+        nn = str(nn).zfill(2)
+        ss = str(ss).zfill(2)
+        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
+        return mmddhhnnss
+
 ######  Start button status check start   ######
 def check_start():
     global m04, m53m, m54m, s_time, count, detected, mmddhhnnss
@@ -429,28 +457,8 @@ def check_start():
         path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'+date.get_date_in_yyyymmdd()+'/'
         makedirs(path)
 
-        # 시작 시간 가져오기
-        # s_time = int(date.get_date_time())
-        
-        # 제품 시작시간 가져오기
-        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
-        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
-        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
-        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
-        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
-        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
-        yyyy = result_d632.registers[0]
-        mm = result_d621.registers[0]
-        dd = result_d622.registers[0]
-        hh = result_d623.registers[0]
-        nn = result_d624.registers[0]
-        ss = result_d625.registers[0]
-        mm = str(mm).zfill(2)
-        dd = str(dd).zfill(2)
-        hh = str(hh).zfill(2)
-        nn = str(nn).zfill(2)
-        ss = str(ss).zfill(2)
-        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
+        # 제품 생산 시작 시간 가져오기기
+        mmddhhnnss = get_produce_start_time()
 
 
         # print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
@@ -599,7 +607,7 @@ def show_camera():
             win.destroy()
             # pass
         # Repeat the same process after every 10 milliseconds
-        label_camera1.after(30, check_start)
+        label_camera1.after(10, check_start)
                 ######  tkinter  end   ###### 
 
 def difference(before, after):
@@ -612,29 +620,7 @@ def camera_frame_log(ctime, detected, confi):
     with open(file_path, "a") as file:
         file.write(ctime + "__" + detected + "__" + str(confi) + "\n")
 
-def detect_camera():
-    global s_time, count, client
-    grabResults = []
-    images, results, annotated_imgs = [], [], []
-    cap_imgs, photos = [], []
-    masks = []
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/box/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/box/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/Original/'
-    makedirs(path)
-    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
-    # makedirs(path)
-    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
-    # makedirs(path)
-
-
-    global time3, time4
-    time3 = int(date.get_time_millisec())
-
+def get_prouct_number():
     # 제품번호 material_number 가져오기
     try:
         if not(client.connected):
@@ -660,13 +646,38 @@ def detect_camera():
         c9  = (ed & 0x00ff)
         c10 = ed >> 8
         s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
-
+        return s_n
+    
     except Exception as e:
         # print(f"===========ERROR==========: {e}")
         # traceback.print_exc(file=sys.stdout)
         logging.error(traceback.format_exc())
         pass
 
+def detect_camera():
+    global s_time, count, client
+    grabResults = []
+    images, results, annotated_imgs = [], [], []
+    cap_imgs, photos = [], []
+    masks = []
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/Original/'
+    makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
+    # makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
+    # makedirs(path)
+
+
+    global time3, time4
+    time3 = int(date.get_time_millisec())
+
+    s_n = get_prouct_number()
     if cam_on:
         try:
             # for i in range(len(cameras)):

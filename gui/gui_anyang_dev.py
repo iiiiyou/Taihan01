@@ -23,12 +23,15 @@ from pymodbus.client import ModbusTcpClient
 from pymodbus.transaction import *
 import time
 import logging
+import threading
+import queue
 
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/20241028_taihanfiber_7-1_best_a.pt') # pruning 적용
-# model = YOLO('C:/source/models/taihanfiber_3-2_best_t.pt')
+# model = YOLO('C:/source/models/20241028_taihanfiber_7-1_best_a.pt') # pruning 적용
+# model = YOLO('C:/source/models/taihanfiber_9-1_20250212_yolov8s-seg_best.pt') # pruning 적용
+model = YOLO('C:/source/models/taihanfiber_11-2_20250218_yolov8s-seg_best.pt')
 imgsize = 640
 confidence = 0.5
 reset_confidence = 0.5
@@ -274,6 +277,18 @@ def show_m04_value(m04_value):
     value_m04.config(text = m04_value)
 # value_m54.pack()
 
+# Threading image save
+def save_image(filename, frame):
+    cv2.imwrite(filename, frame)
+
+# Threading save SQL
+def write_detected_sql(mmddhhnnss, serial_number, err_cnt_array, d_meter, type, d_time, image, area):
+    detect.write_sql(mmddhhnnss, serial_number, err_cnt_array, d_meter, type, d_time, image, area)
+
+# Threading image save
+def write_start_sql(mmddhhnnss, cable_area_base):
+    start.write_sql3(mmddhhnnss, cable_area_base)
+
 
 def start_btn_check():
     try:
@@ -383,6 +398,33 @@ def is_detected(x):
         detected.append(x)
         return True
 
+
+# 제품 생산 시작시간 가져오기
+def get_produce_start_time():
+        # 시작 시간 가져오기
+        # s_time = int(date.get_date_time())
+        
+        # 제품 시작시간 가져오기
+        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
+        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
+        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
+        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
+        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
+        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
+        yyyy = result_d632.registers[0]
+        mm = result_d621.registers[0]
+        dd = result_d622.registers[0]
+        hh = result_d623.registers[0]
+        nn = result_d624.registers[0]
+        ss = result_d625.registers[0]
+        mm = str(mm).zfill(2)
+        dd = str(dd).zfill(2)
+        hh = str(hh).zfill(2)
+        nn = str(nn).zfill(2)
+        ss = str(ss).zfill(2)
+        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
+        return mmddhhnnss
+
 ######  Start button status check start   ######
 def check_start():
     global m04, m53m, m54m, s_time, count, detected, mmddhhnnss
@@ -415,28 +457,8 @@ def check_start():
         path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'+date.get_date_in_yyyymmdd()+'/'
         makedirs(path)
 
-        # 시작 시간 가져오기
-        # s_time = int(date.get_date_time())
-        
-        # 제품 시작시간 가져오기
-        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
-        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
-        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
-        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
-        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
-        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
-        yyyy = result_d632.registers[0]
-        mm = result_d621.registers[0]
-        dd = result_d622.registers[0]
-        hh = result_d623.registers[0]
-        nn = result_d624.registers[0]
-        ss = result_d625.registers[0]
-        mm = str(mm).zfill(2)
-        dd = str(dd).zfill(2)
-        hh = str(hh).zfill(2)
-        nn = str(nn).zfill(2)
-        ss = str(ss).zfill(2)
-        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
+        # 제품 생산 시작 시간 가져오기기
+        mmddhhnnss = get_produce_start_time()
 
 
         # print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
@@ -445,7 +467,11 @@ def check_start():
         # mask_area_base_set()
         
         #SQL insert (시작시간)
-        start.write_sql3(mmddhhnnss, cable_area_base)
+        
+        start_sql_thread = threading.Thread(target=write_start_sql, args=(mmddhhnnss, cable_area_base))
+        start_sql_thread.start()
+        start_sql_thread.join()
+        # start.write_sql3(mmddhhnnss, cable_area_base)
         
         # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
 
@@ -493,6 +519,39 @@ def exposure_change():
     # print('camera bright:', int(np.mean(cams_bright_mean)), ', len:', len(cams_bright_mean))
 
 
+q= queue.Queue()
+
+def camara_img_merge():
+    grabResults = []
+    images, results, annotated_imgs = [], [], []
+    try:
+        for i in range(len(cameras)):
+            grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+            try: 
+                print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
+                if grabResults[i].GrabSucceeded():
+
+                    images.append(converter.Convert(grabResults[i]))
+                    images[i] = images[i].GetArray()
+                    images[i] = cv2.resize(images[i], (imgsize,imgsize))
+
+            except Exception as e:
+                # print(f"===========ERROR==========: {e}")
+                # traceback.print_exc(file=sys.stdout)
+                logging.error(traceback.format_exc())
+                pass
+                    
+        # 사진 3장 합치기
+        channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+        merge_img = imgmerge.merge(images, channel) # 합치기
+        q.put(merge_img)
+        
+    except Exception as e:
+        # print(f"===========ERROR==========: {e}")
+        # traceback.print_exc(file=sys.stdout)
+        logging.error(traceback.format_exc())
+        pass
+
 
 def show_camera():
     grabResults = []
@@ -501,26 +560,31 @@ def show_camera():
 
     if cam_on:
         try:
-            for i in range(len(cameras)):
-                grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-                try: 
-                    print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
-                    if grabResults[i].GrabSucceeded():
+            # for i in range(len(cameras)):
+            #     grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+            #     try: 
+            #         print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
+            #         if grabResults[i].GrabSucceeded():
 
-                        images.append(converter.Convert(grabResults[i]))
-                        images[i] = images[i].GetArray()
-                        images[i] = cv2.resize(images[i], (imgsize,imgsize))
+            #             images.append(converter.Convert(grabResults[i]))
+            #             images[i] = images[i].GetArray()
+            #             images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
-                except Exception as e:
-                    # print(f"===========ERROR==========: {e}")
-                    # traceback.print_exc(file=sys.stdout)
-                    logging.error(traceback.format_exc())
-                    continue
+            #     except Exception as e:
+            #         # print(f"===========ERROR==========: {e}")
+            #         # traceback.print_exc(file=sys.stdout)
+            #         logging.error(traceback.format_exc())
+            #         continue
             
                        
-            # 사진 3장 합치기
-            channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
-            merge_img = imgmerge.merge(images, channel) # 합치기
+            # # 사진 3장 합치기
+            # channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+            # merge_img = imgmerge.merge(images, channel) # 합치기
+            merge_start = threading.Thread(target=camara_img_merge,args=())
+            merge_start.start()
+            merge_start.join()
+
+            merge_img = q.get()
             # cv2.imshow('title1', merge_img)# cv2.resize(img1r, (330,330)))
             # cv2.waitKey(0)
 
@@ -534,17 +598,16 @@ def show_camera():
             photo = ImageTk.PhotoImage(image=cap_img)
             label_camera1.photo_image = photo
             label_camera1.configure(image=photo)
-            camera_frame_log(date.get_time_millisec(), "show_camera", "0")
 
         except Exception as e:
             # print(f"===========ERROR==========: {e}")
             # traceback.print_exc(file=sys.stdout)
             logging.error(traceback.format_exc())
-            
+            pass
             win.destroy()
             # pass
         # Repeat the same process after every 10 milliseconds
-        label_camera1.after(30, check_start)
+        label_camera1.after(10, check_start)
                 ######  tkinter  end   ###### 
 
 def difference(before, after):
@@ -557,30 +620,7 @@ def camera_frame_log(ctime, detected, confi):
     with open(file_path, "a") as file:
         file.write(ctime + "__" + detected + "__" + str(confi) + "\n")
 
-
-def detect_camera():
-    global s_time, count, client
-    grabResults = []
-    images, results, annotated_imgs = [], [], []
-    cap_imgs, photos = [], []
-    masks = []
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/box/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/box/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/Original/'
-    makedirs(path)
-    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
-    # makedirs(path)
-    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
-    # makedirs(path)
-
-
-    global time3, time4
-    time3 = int(date.get_time_millisec())
-
+def get_prouct_number():
     # 제품번호 material_number 가져오기
     try:
         if not(client.connected):
@@ -606,36 +646,66 @@ def detect_camera():
         c9  = (ed & 0x00ff)
         c10 = ed >> 8
         s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
-
+        return s_n
+    
     except Exception as e:
         # print(f"===========ERROR==========: {e}")
         # traceback.print_exc(file=sys.stdout)
         logging.error(traceback.format_exc())
         pass
 
+def detect_camera():
+    global s_time, count, client
+    grabResults = []
+    images, results, annotated_imgs = [], [], []
+    cap_imgs, photos = [], []
+    masks = []
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/Original/'
+    makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
+    # makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
+    # makedirs(path)
+
+
+    global time3, time4
+    time3 = int(date.get_time_millisec())
+
+    s_n = get_prouct_number()
     if cam_on:
         try:
-            for i in range(len(cameras)):
-                grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-                try:
-                    if grabResults[i].GrabSucceeded():
+            # for i in range(len(cameras)):
+            #     grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+            #     try:
+            #         if grabResults[i].GrabSucceeded():
 
-                        images.append(converter.Convert(grabResults[i]))
-                        images[i] = images[i].GetArray()
-                        images[i] = cv2.resize(images[i], (imgsize,imgsize))
+            #             images.append(converter.Convert(grabResults[i]))
+            #             images[i] = images[i].GetArray()
+            #             images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
 
-                        #### mask area end ####
-                except Exception as e:
-                    # print(f"===========ERROR==========: {e}")
-                    # traceback.print_exc(file=sys.stdout)
-                    continue
+            #             #### mask area end ####
+            #     except Exception as e:
+            #         # print(f"===========ERROR==========: {e}")
+            #         # traceback.print_exc(file=sys.stdout)
+            #         continue
 
 
             try:
-                # 사진 3장 합치기
-                channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
-                merge_img = imgmerge.merge(images, channel) # 합치기
+            #     # 사진 3장 합치기
+            #     channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+            #     merge_img = imgmerge.merge(images, channel) # 합치기
+                merge_start = threading.Thread(target=camara_img_merge,args=())
+                merge_start.start()
+                merge_start.join()
+
+                merge_img = q.get()
                 # cv2.imshow('title1', merge_img)# cv2.resize(img1r, (330,330)))
                 # cv2.waitKey(0)
                 
@@ -645,22 +715,7 @@ def detect_camera():
 
                 # Run YOLOv8 inference on the frame
                 # results1 = model(img1)
-
-
-                # Load the YOLO11 model
-                # model = YOLO("yolo11n.pt")
-
-                # Export the model to TensorRT format
-                # model.export(format="engine")  # creates 'yolo11n.engine'
-
-                # Load the exported TensorRT model
-                #tensorrt_model = YOLO("C:/source/models/20241028_taihanfiber_7-1_best_a.engine", task='segment')
-
-                # Run inference
-                # results = tensorrt_model("https://ultralytics.com/images/bus.jpg")
-                # result = tensorrt_model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence)
-
-                result = model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence)
+                result = model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence, half=True)
 
                 # Visualize the results on the frame
                 annotated_img = cv2.resize(result[0].plot(), (530,530))
@@ -679,11 +734,8 @@ def detect_camera():
                 time1 = int(date.get_time_millisec())
                 conf_max=0
 
-                if not(result[0].boxes.shape[0] > 0):
-                    # camera_frame_log(date.get_time_millisec(), "not_Detected", result[0].boxes.conf)
-                    camera_frame_log(date.get_time_millisec(), "not_Detected", confidence)
-                else:
-                # if (result[0].boxes.shape[0] > 0) and True :
+
+                if (result[0].boxes.shape[0] > 0) and True :
                 # if (result[0].boxes.shape[0] > 0) and (time1 - time2 > (100000*1)) : # 0.1초 * 5
 
                     conf_max = max(result[0].boxes.conf)
@@ -699,8 +751,14 @@ def detect_camera():
                             time2 = int(date.get_time_millisec())
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
-                            cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
+                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread1.start()
+                            save_thread1.join()
+                            # cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
+                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread2.start()
+                            save_thread2.join()
+                            # cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
                             count = count + 1
 
                             # PLC에서 제품 에러 수 가져오기
@@ -732,17 +790,24 @@ def detect_camera():
                             area = 0
                             # area = int(mean_masks[len(mean_masks)-1])
 
-                            detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
+                            save_sql_thread = threading.Thread(target=write_detected_sql, args=(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area))
+                            save_sql_thread.start()
+                            save_sql_thread.join()
+
+                            # detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
                             # time.sleep(1)
-                            camera_frame_log(date.get_time_millisec(), "Detected", confidence)       
                         else:
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                            cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
-                            # camera_frame_log(date.get_time_millisec(), "Detected:notsave_conf_max", conf_max)
-                            camera_frame_log(date.get_time_millisec(), "Detected_<70", confidence)
-                    # camera_frame_log(date.get_time_millisec(), "Detected", result[0].boxes.conf)       
+                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread3.start()
+                            save_thread3.join()
+                            # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
+                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread4.start()
+                            save_thread4.join()
+                            # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
+                            
 
                 time4 = int(date.get_time_millisec())
                 diff = difference(time3, time4)
@@ -755,15 +820,21 @@ def detect_camera():
 
                         ######  tkinter  end   ######
                         
-            except Exception as e:
-                print(f"===========ERROR==========: {e}")
+            except AttributeError as e:
+                print(f"===========ERROR==========76: {e}")
                 # traceback.print_exc(file=sys.stdout)
-
+                logging.error(traceback.format_exc())
+                pass
+            except Exception as e:
+                print(f"===========ERROR==========763: {e}")
+                # traceback.print_exc(file=sys.stdout)
+                logging.error(traceback.format_exc())
+                pass
         except Exception as e:
             # print(f"===========ERROR==========: {e}")
             # traceback.print_exc(file=sys.stdout)
             logging.error(traceback.format_exc())
-            
+            pass
             win.destroy()
 
 def start_cam():
