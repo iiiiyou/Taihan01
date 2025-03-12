@@ -31,7 +31,7 @@ logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 # Load the YOLOv8 model#
 # model = YOLO('C:/source/models/20241028_taihanfiber_7-1_best_a.pt') # pruning 적용
 # model = YOLO('C:/source/models/taihanfiber_9-1_20250212_yolov8s-seg_best.pt') # pruning 적용
-model = YOLO('C:/source/models/taihanfiber_11-2_20250218_yolov8s-seg_best.pt')
+model = YOLO('C:/source/models/taihanfiber_12-1_20250309_yolo11m-seg_best.pt')
 imgsize = 640
 confidence = 0.5
 reset_confidence = 0.5
