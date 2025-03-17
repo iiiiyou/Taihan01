@@ -631,6 +631,10 @@ def detect_camera():
     makedirs(path)
     path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/Original/'
     makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/box/'
+    # makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/Original/'
+    makedirs(path)
     # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
     # makedirs(path)
     # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
@@ -801,7 +805,16 @@ def detect_camera():
                             save_thread4.start()
                             save_thread4.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
-                            
+                else:
+                    detected_time = date.get_time_millisec()[0:16]
+                    detected_date = date.get_date_in_yyyymmdd()
+                    # save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/box/' + detected_time + '.jpg', result[0].plot()))
+                    # save_thread3.start()
+                    # save_thread3.join()
+                    # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
+                    save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', merge_img))
+                    save_thread4.start()
+                    save_thread4.join()
 
                 time4 = int(date.get_time_millisec())
                 diff = difference(time3, time4)
