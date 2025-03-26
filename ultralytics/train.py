@@ -4,19 +4,19 @@ import shutil
 
 from roboflow import Roboflow
 
-dataset_name = "taihanfiber_11-2"
+dataset_name = "taihanfiber_13-1"
 if not os.path.exists("datasets/"+dataset_name):
 
     rf = Roboflow(api_key="bxW7hooY5jiknZS3GIxI")
-    project = rf.workspace("i4umaket").project("taihanfiber_11")
-    version = project.version(2)
-    dataset = version.download("yolov8")
-
+    project = rf.workspace("i4umaket").project("taihanfiber_13")
+    version = project.version(1)
+    dataset = version.download("yolov11")
+    
     shutil.move(dataset_name, "datasets/"+dataset_name)
 
 # 모델을 로드하세요..
-model = YOLO('yolov8s-seg.yaml')  # YAML에서 새 모델 구축
-model = YOLO('yolov8s-seg.pt')  # 사전 훈련된 모델 로드 (훈련을 위해 권장됨)
+model = YOLO('yolo11m-seg.yaml')  # YAML에서 새 모델 구축
+model = YOLO('yolo11m-seg.pt')  # 사전 훈련된 모델 로드 (훈련을 위해 권장됨)
 # model = YOLO('yolov8m.yaml').load('yolov8n.pt')  # YAML에서 구축 및 가중치 전달
 
 
