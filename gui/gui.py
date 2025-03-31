@@ -289,10 +289,98 @@ def write_detected_sql(mmddhhnnss, serial_number, err_cnt_array, d_meter, type, 
 def write_start_sql(mmddhhnnss, cable_area_base):
     start.write_sql3(mmddhhnnss, cable_area_base)
 
+# PLC readcoil status
+def plc_status(client):
+    try:
+        if not(client.connected):
+            client = ModbusTcpClient('192.168.102.20' ,502)
+        result_m53 = client.read_coils(0x53)
+        result_m54 = client.read_coils(0x54)
+        result_m01 = client.read_coils(0x01)
+        result_m04 = client.read_coils(0x04)
+        # print("type(result_m53.bits[0]): ", type(result_m53.bits[0]))
+        # print("result_m53.bits[0]: ", result_m53.bits[0])
+        # print("type(result_m54.bits[0]): ", type(result_m54.bits[0]))
+        # print("result_m54.bits[0]: ", result_m54.bits[0])
+        # print("type(m53): ", type(m53))
+        # print("type(m54): ", type(m54))
+        m53, m54 = result_m53.bits[0], result_m54.bits[0]
+        m01 = result_m01.bits[0]
+        m04 = result_m04.bits[0]
+        return m01, m04, m53, m54
+    except:
+        logging.error(traceback.format_exc())
+        pass
+
+# PLC readcoil starttime
+def plc_starttime(client):
+    try:
+        if not(client.connected):
+            client = ModbusTcpClient('192.168.102.20' ,502)
+        # 제품 시작시간 가져오기
+        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
+        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
+        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
+        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
+        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
+        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
+        yyyy = result_d632.registers[0]
+        mm = result_d621.registers[0]
+        dd = result_d622.registers[0]
+        hh = result_d623.registers[0]
+        nn = result_d624.registers[0]
+        ss = result_d625.registers[0]
+        mm = str(mm).zfill(2)
+        dd = str(dd).zfill(2)
+        hh = str(hh).zfill(2)
+        nn = str(nn).zfill(2)
+        ss = str(ss).zfill(2)
+        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
+        return mmddhhnnss
+    
+    except:
+        logging.error(traceback.format_exc())
+        pass
+
+
+# plc readcoil getserial
+def plc_getserial(client):
+    try:
+        if not(client.connected):
+            client = ModbusTcpClient('192.168.102.20' ,502)
+        result_n0_1_2  = client.read_holding_registers(120)    # D120   제품번호
+        result_n0_3_4  = client.read_holding_registers(121)
+        result_n0_5_6  = client.read_holding_registers(122)
+        result_n0_7_8  = client.read_holding_registers(123)
+        result_n0_9_10  = client.read_holding_registers(124)
+        ad=(result_n0_1_2.registers[0])
+        bd=(result_n0_3_4.registers[0])
+        cd=(result_n0_5_6.registers[0])
+        dd=(result_n0_7_8.registers[0])
+        ed=(result_n0_9_10.registers[0])
+        c1 = (ad & 0x00ff)
+        c2 = ad >> 8
+        c3 = (bd & 0x00ff)
+        c4 = bd >> 8
+        c5 = (cd & 0x00ff)
+        c6 = cd >> 8
+        c7 = (dd & 0x00ff)
+        c8 = dd >> 8
+        c9  = (ed & 0x00ff)
+        c10 = ed >> 8
+        s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
+
+        return s_n
+
+    except Exception as e:
+        # print(f"===========ERROR==========: {e}")
+        # traceback.print_exc(file=sys.stdout)
+        logging.error(traceback.format_exc())
+        pass
 
 def start_btn_check():
+    global m01, m04, m53, m54, m53m, m54m, s_time, count, client
     try:
-        global m01, m04, m53, m54, m53m, m54m, s_time, count, client
         if not(client.connected):
             client = ModbusTcpClient('192.168.102.20' ,502)
         result_m53 = client.read_coils(0x53)
@@ -328,7 +416,7 @@ def areabaseset():
 
 #Start 버튼 수동 실행 시작
 def startbtn():
-    global m01, m53, m54, m53m, m54m, s_time, count, client
+    global m01, client
     if not(client.connected):
         client = ModbusTcpClient('192.168.102.20' ,502)
     result_m01 = client.read_coils(0x01)
@@ -345,7 +433,7 @@ def startbtn():
 
 #manual_reset 시작
 def manual_reset():   
-    global m01, m53, m54, m53m, m54m, s_time, count, client
+    global client
     if not(client.connected):
         client = ModbusTcpClient('192.168.102.20' ,502)
     client.write_coils(0x01,0)
@@ -400,8 +488,16 @@ def is_detected(x):
 
 ######  Start button status check start   ######
 def check_start():
-    global m04, m53m, m54m, s_time, count, detected, mmddhhnnss
-    start_btn_check()
+    global m04, m53m, m54m, s_time, count, detected, mmddhhnnss, check_status
+        
+    if(check_status%10==0):
+        start_btn_check()
+    elif(check_status==30000):
+        check_status=1
+    else:
+        print("")
+        
+    check_status+=1
     
     # resetbtn()
 
@@ -433,25 +529,27 @@ def check_start():
         # 시작 시간 가져오기
         # s_time = int(date.get_date_time())
         
-        # 제품 시작시간 가져오기
-        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
-        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
-        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
-        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
-        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
-        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
-        yyyy = result_d632.registers[0]
-        mm = result_d621.registers[0]
-        dd = result_d622.registers[0]
-        hh = result_d623.registers[0]
-        nn = result_d624.registers[0]
-        ss = result_d625.registers[0]
-        mm = str(mm).zfill(2)
-        dd = str(dd).zfill(2)
-        hh = str(hh).zfill(2)
-        nn = str(nn).zfill(2)
-        ss = str(ss).zfill(2)
-        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
+        # # 제품 시작시간 가져오기
+        # result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
+        # result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
+        # result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
+        # result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
+        # result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
+        # result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
+        # yyyy = result_d632.registers[0]
+        # mm = result_d621.registers[0]
+        # dd = result_d622.registers[0]
+        # hh = result_d623.registers[0]
+        # nn = result_d624.registers[0]
+        # ss = result_d625.registers[0]
+        # mm = str(mm).zfill(2)
+        # dd = str(dd).zfill(2)
+        # hh = str(hh).zfill(2)
+        # nn = str(nn).zfill(2)
+        # ss = str(ss).zfill(2)
+        # mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
+
+        mmddhhnnss = plc_starttime(client)
 
 
         # print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
@@ -644,37 +742,39 @@ def detect_camera():
     global time3, time4
     time3 = int(date.get_time_millisec())
 
-    # 제품번호 material_number 가져오기
-    try:
-        if not(client.connected):
-            client = ModbusTcpClient('192.168.102.20' ,502)
-        result_n0_1_2  = client.read_holding_registers(120)    # D120   제품번호
-        result_n0_3_4  = client.read_holding_registers(121)
-        result_n0_5_6  = client.read_holding_registers(122)
-        result_n0_7_8  = client.read_holding_registers(123)
-        result_n0_9_10  = client.read_holding_registers(124)
-        ad=(result_n0_1_2.registers[0])
-        bd=(result_n0_3_4.registers[0])
-        cd=(result_n0_5_6.registers[0])
-        dd=(result_n0_7_8.registers[0])
-        ed=(result_n0_9_10.registers[0])
-        c1 = (ad & 0x00ff)
-        c2 = ad >> 8
-        c3 = (bd & 0x00ff)
-        c4 = bd >> 8
-        c5 = (cd & 0x00ff)
-        c6 = cd >> 8
-        c7 = (dd & 0x00ff)
-        c8 = dd >> 8
-        c9  = (ed & 0x00ff)
-        c10 = ed >> 8
-        s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
+    # # 제품번호 material_number 가져오기
+    
+    # try:
+    #     if not(client.connected):
+    #         client = ModbusTcpClient('192.168.102.20' ,502)
+    #     result_n0_1_2  = client.read_holding_registers(120)    # D120   제품번호
+    #     result_n0_3_4  = client.read_holding_registers(121)
+    #     result_n0_5_6  = client.read_holding_registers(122)
+    #     result_n0_7_8  = client.read_holding_registers(123)
+    #     result_n0_9_10  = client.read_holding_registers(124)
+    #     ad=(result_n0_1_2.registers[0])
+    #     bd=(result_n0_3_4.registers[0])
+    #     cd=(result_n0_5_6.registers[0])
+    #     dd=(result_n0_7_8.registers[0])
+    #     ed=(result_n0_9_10.registers[0])
+    #     c1 = (ad & 0x00ff)
+    #     c2 = ad >> 8
+    #     c3 = (bd & 0x00ff)
+    #     c4 = bd >> 8
+    #     c5 = (cd & 0x00ff)
+    #     c6 = cd >> 8
+    #     c7 = (dd & 0x00ff)
+    #     c8 = dd >> 8
+    #     c9  = (ed & 0x00ff)
+    #     c10 = ed >> 8
+    #     s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
 
-    except Exception as e:
-        # print(f"===========ERROR==========: {e}")
-        # traceback.print_exc(file=sys.stdout)
-        logging.error(traceback.format_exc())
-        pass
+    # except Exception as e:
+    #     # print(f"===========ERROR==========: {e}")
+    #     # traceback.print_exc(file=sys.stdout)
+    #     logging.error(traceback.format_exc())
+    #     pass
+
 
     if cam_on:
         try:
@@ -747,6 +847,7 @@ def detect_camera():
                     # if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
                         if(conf_max>=0.50):
                             time2 = int(date.get_time_millisec())
+                            s_n = plc_getserial(client)
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
                             save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
@@ -844,9 +945,12 @@ def detect_camera():
             pass
             win.destroy()
 
+check_status = 1
+
 def start_cam():
-    global cam_on
+    global cam_on, check_status
     start_btn_check()
+    
     if cam_on == False :
         # stop_cam()
         cam_on = True
