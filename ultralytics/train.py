@@ -4,14 +4,14 @@ import shutil
 
 from roboflow import Roboflow
 
-dataset_name = "taihanfiber_13-1"
+dataset_name = "taihanfiber_14-1"
 if not os.path.exists("datasets/"+dataset_name):
 
     rf = Roboflow(api_key="bxW7hooY5jiknZS3GIxI")
-    project = rf.workspace("i4umaket").project("taihanfiber_13")
+    project = rf.workspace("i4umaket").project("taihanfiber_14")
     version = project.version(1)
     dataset = version.download("yolov11")
-    
+
     shutil.move(dataset_name, "datasets/"+dataset_name)
 
 # 모델을 로드하세요..

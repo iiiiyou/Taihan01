@@ -29,12 +29,11 @@ import queue
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-# model = YOLO('C:/source/models/20241028_taihanfiber_7-1_best_a.pt') # pruning 적용
-# model = YOLO('C:/source/models/taihanfiber_9-1_20250212_yolov8s-seg_best.pt') # pruning 적용
-model = YOLO('C:/source/models/taihanfiber_11-2_20250218_yolov8s-seg_best.pt')
+# model = YOLO('C:/source/models/taihanfiber_13-1_20250325_yolo11m-seg_best.pt') # pruning 적용
+model = YOLO('C:/source/models/taihanfiber_14-1_20250406_yolo11m-seg_best.pt') # pruning 적용
 imgsize = 640
-confidence = 0.5
-reset_confidence = 0.5
+confidence = 0.48
+reset_confidence = 0.48
 # 케이블 면적 기준 값
 cable_area_base = 0
 
@@ -289,10 +288,98 @@ def write_detected_sql(mmddhhnnss, serial_number, err_cnt_array, d_meter, type, 
 def write_start_sql(mmddhhnnss, cable_area_base):
     start.write_sql3(mmddhhnnss, cable_area_base)
 
+# PLC readcoil status
+def plc_status(client):
+    try:
+        if not(client.connected):
+            client = ModbusTcpClient('192.168.102.20' ,502)
+        result_m53 = client.read_coils(0x53)
+        result_m54 = client.read_coils(0x54)
+        result_m01 = client.read_coils(0x01)
+        result_m04 = client.read_coils(0x04)
+        # print("type(result_m53.bits[0]): ", type(result_m53.bits[0]))
+        # print("result_m53.bits[0]: ", result_m53.bits[0])
+        # print("type(result_m54.bits[0]): ", type(result_m54.bits[0]))
+        # print("result_m54.bits[0]: ", result_m54.bits[0])
+        # print("type(m53): ", type(m53))
+        # print("type(m54): ", type(m54))
+        m53, m54 = result_m53.bits[0], result_m54.bits[0]
+        m01 = result_m01.bits[0]
+        m04 = result_m04.bits[0]
+        return m01, m04, m53, m54
+    except:
+        logging.error(traceback.format_exc())
+        pass
+
+# PLC readcoil starttime
+def plc_starttime(client):
+    try:
+        if not(client.connected):
+            client = ModbusTcpClient('192.168.102.20' ,502)
+        # 제품 시작시간 가져오기
+        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
+        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
+        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
+        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
+        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
+        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
+        yyyy = result_d632.registers[0]
+        mm = result_d621.registers[0]
+        dd = result_d622.registers[0]
+        hh = result_d623.registers[0]
+        nn = result_d624.registers[0]
+        ss = result_d625.registers[0]
+        mm = str(mm).zfill(2)
+        dd = str(dd).zfill(2)
+        hh = str(hh).zfill(2)
+        nn = str(nn).zfill(2)
+        ss = str(ss).zfill(2)
+        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
+        return mmddhhnnss
+    
+    except:
+        logging.error(traceback.format_exc())
+        pass
+
+
+# plc readcoil getserial
+def plc_getserial(client):
+    try:
+        if not(client.connected):
+            client = ModbusTcpClient('192.168.102.20' ,502)
+        result_n0_1_2  = client.read_holding_registers(120)    # D120   제품번호
+        result_n0_3_4  = client.read_holding_registers(121)
+        result_n0_5_6  = client.read_holding_registers(122)
+        result_n0_7_8  = client.read_holding_registers(123)
+        result_n0_9_10  = client.read_holding_registers(124)
+        ad=(result_n0_1_2.registers[0])
+        bd=(result_n0_3_4.registers[0])
+        cd=(result_n0_5_6.registers[0])
+        dd=(result_n0_7_8.registers[0])
+        ed=(result_n0_9_10.registers[0])
+        c1 = (ad & 0x00ff)
+        c2 = ad >> 8
+        c3 = (bd & 0x00ff)
+        c4 = bd >> 8
+        c5 = (cd & 0x00ff)
+        c6 = cd >> 8
+        c7 = (dd & 0x00ff)
+        c8 = dd >> 8
+        c9  = (ed & 0x00ff)
+        c10 = ed >> 8
+        s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
+
+        return s_n
+
+    except Exception as e:
+        # print(f"===========ERROR==========: {e}")
+        # traceback.print_exc(file=sys.stdout)
+        logging.error(traceback.format_exc())
+        pass
 
 def start_btn_check():
+    global m01, m04, m53, m54, m53m, m54m, s_time, count, client
     try:
-        global m01, m04, m53, m54, m53m, m54m, s_time, count, client
         if not(client.connected):
             client = ModbusTcpClient('192.168.102.20' ,502)
         result_m53 = client.read_coils(0x53)
@@ -328,7 +415,7 @@ def areabaseset():
 
 #Start 버튼 수동 실행 시작
 def startbtn():
-    global m01, m53, m54, m53m, m54m, s_time, count, client
+    global m01, client
     if not(client.connected):
         client = ModbusTcpClient('192.168.102.20' ,502)
     result_m01 = client.read_coils(0x01)
@@ -345,7 +432,7 @@ def startbtn():
 
 #manual_reset 시작
 def manual_reset():   
-    global m01, m53, m54, m53m, m54m, s_time, count, client
+    global client
     if not(client.connected):
         client = ModbusTcpClient('192.168.102.20' ,502)
     client.write_coils(0x01,0)
@@ -398,37 +485,18 @@ def is_detected(x):
         detected.append(x)
         return True
 
-
-# 제품 생산 시작시간 가져오기
-def get_produce_start_time():
-        # 시작 시간 가져오기
-        # s_time = int(date.get_date_time())
-        
-        # 제품 시작시간 가져오기
-        result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
-        result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
-        result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
-        result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
-        result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
-        result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
-        yyyy = result_d632.registers[0]
-        mm = result_d621.registers[0]
-        dd = result_d622.registers[0]
-        hh = result_d623.registers[0]
-        nn = result_d624.registers[0]
-        ss = result_d625.registers[0]
-        mm = str(mm).zfill(2)
-        dd = str(dd).zfill(2)
-        hh = str(hh).zfill(2)
-        nn = str(nn).zfill(2)
-        ss = str(ss).zfill(2)
-        mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
-        return mmddhhnnss
-
 ######  Start button status check start   ######
 def check_start():
-    global m04, m53m, m54m, s_time, count, detected, mmddhhnnss
-    start_btn_check()
+    global m04, m53m, m54m, s_time, count, detected, mmddhhnnss, check_status
+        
+    if(check_status%10==0):
+        start_btn_check()
+    elif(check_status==30000):
+        check_status=1
+    else:
+        print("")
+        
+    check_status+=1
     
     # resetbtn()
 
@@ -457,8 +525,30 @@ def check_start():
         path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'+date.get_date_in_yyyymmdd()+'/'
         makedirs(path)
 
-        # 제품 생산 시작 시간 가져오기기
-        mmddhhnnss = get_produce_start_time()
+        # 시작 시간 가져오기
+        # s_time = int(date.get_date_time())
+        
+        # # 제품 시작시간 가져오기
+        # result_d632 = client.read_holding_registers(632)    # D632 시작 년도 4자리
+        # result_d621 = client.read_holding_registers(621)    # D621 시작 월 2자리
+        # result_d622 = client.read_holding_registers(622)    # D622 시작 일 2자리
+        # result_d623 = client.read_holding_registers(623)    # D623 시작 시 2자리
+        # result_d624 = client.read_holding_registers(624)    # D624 시작 분 2자리
+        # result_d625 = client.read_holding_registers(625)    # D625 시작 초 2자리
+        # yyyy = result_d632.registers[0]
+        # mm = result_d621.registers[0]
+        # dd = result_d622.registers[0]
+        # hh = result_d623.registers[0]
+        # nn = result_d624.registers[0]
+        # ss = result_d625.registers[0]
+        # mm = str(mm).zfill(2)
+        # dd = str(dd).zfill(2)
+        # hh = str(hh).zfill(2)
+        # nn = str(nn).zfill(2)
+        # ss = str(ss).zfill(2)
+        # mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
+
+        mmddhhnnss = plc_starttime(client)
 
 
         # print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
@@ -560,31 +650,35 @@ def show_camera():
 
     if cam_on:
         try:
-            # for i in range(len(cameras)):
-            #     grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-            #     try: 
-            #         print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
-            #         if grabResults[i].GrabSucceeded():
+            for i in range(len(cameras)):
+                grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+                try: 
+                    print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
+                    if grabResults[i].GrabSucceeded():
 
-            #             images.append(converter.Convert(grabResults[i]))
-            #             images[i] = images[i].GetArray()
-            #             images[i] = cv2.resize(images[i], (imgsize,imgsize))
+                        images.append(converter.Convert(grabResults[i]))
+                        images[i] = images[i].GetArray()
+                        images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
-            #     except Exception as e:
-            #         # print(f"===========ERROR==========: {e}")
-            #         # traceback.print_exc(file=sys.stdout)
-            #         logging.error(traceback.format_exc())
-            #         continue
+                except Exception as e:
+                    # print(f"===========ERROR==========: {e}")
+                    # traceback.print_exc(file=sys.stdout)
+                    logging.error(traceback.format_exc())
+                    continue
             
                        
-            # # 사진 3장 합치기
-            # channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
-            # merge_img = imgmerge.merge(images, channel) # 합치기
-            merge_start = threading.Thread(target=camara_img_merge,args=())
-            merge_start.start()
-            merge_start.join()
+            # 사진 3장 합치기
+            channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+            merge_img = imgmerge.merge(images, channel) # 합치기
 
-            merge_img = q.get()
+            # camara threading
+            # merge_start = threading.Thread(target=camara_img_merge,args=())
+            # merge_start.start()
+            # merge_start.join()
+
+            # merge_img = q.get()
+            # camara threading end
+
             # cv2.imshow('title1', merge_img)# cv2.resize(img1r, (330,330)))
             # cv2.waitKey(0)
 
@@ -607,7 +701,7 @@ def show_camera():
             win.destroy()
             # pass
         # Repeat the same process after every 10 milliseconds
-        label_camera1.after(10, check_start)
+        label_camera1.after(30, check_start)
                 ######  tkinter  end   ###### 
 
 def difference(before, after):
@@ -620,40 +714,6 @@ def camera_frame_log(ctime, detected, confi):
     with open(file_path, "a") as file:
         file.write(ctime + "__" + detected + "__" + str(confi) + "\n")
 
-def get_prouct_number():
-    # 제품번호 material_number 가져오기
-    try:
-        if not(client.connected):
-            client = ModbusTcpClient('192.168.102.20' ,502)
-        result_n0_1_2  = client.read_holding_registers(120)    # D120   제품번호
-        result_n0_3_4  = client.read_holding_registers(121)
-        result_n0_5_6  = client.read_holding_registers(122)
-        result_n0_7_8  = client.read_holding_registers(123)
-        result_n0_9_10  = client.read_holding_registers(124)
-        ad=(result_n0_1_2.registers[0])
-        bd=(result_n0_3_4.registers[0])
-        cd=(result_n0_5_6.registers[0])
-        dd=(result_n0_7_8.registers[0])
-        ed=(result_n0_9_10.registers[0])
-        c1 = (ad & 0x00ff)
-        c2 = ad >> 8
-        c3 = (bd & 0x00ff)
-        c4 = bd >> 8
-        c5 = (cd & 0x00ff)
-        c6 = cd >> 8
-        c7 = (dd & 0x00ff)
-        c8 = dd >> 8
-        c9  = (ed & 0x00ff)
-        c10 = ed >> 8
-        s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
-        return s_n
-    
-    except Exception as e:
-        # print(f"===========ERROR==========: {e}")
-        # traceback.print_exc(file=sys.stdout)
-        logging.error(traceback.format_exc())
-        pass
-
 def detect_camera():
     global s_time, count, client
     grabResults = []
@@ -664,9 +724,13 @@ def detect_camera():
     makedirs(path)
     path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
     makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/box/'
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under50/box/'
     makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under70/Original/'
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under50/Original/'
+    makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/box/'
+    # makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/Original/'
     makedirs(path)
     # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
     # makedirs(path)
@@ -677,35 +741,68 @@ def detect_camera():
     global time3, time4
     time3 = int(date.get_time_millisec())
 
-    s_n = get_prouct_number()
+    # # 제품번호 material_number 가져오기
+    
+    # try:
+    #     if not(client.connected):
+    #         client = ModbusTcpClient('192.168.102.20' ,502)
+    #     result_n0_1_2  = client.read_holding_registers(120)    # D120   제품번호
+    #     result_n0_3_4  = client.read_holding_registers(121)
+    #     result_n0_5_6  = client.read_holding_registers(122)
+    #     result_n0_7_8  = client.read_holding_registers(123)
+    #     result_n0_9_10  = client.read_holding_registers(124)
+    #     ad=(result_n0_1_2.registers[0])
+    #     bd=(result_n0_3_4.registers[0])
+    #     cd=(result_n0_5_6.registers[0])
+    #     dd=(result_n0_7_8.registers[0])
+    #     ed=(result_n0_9_10.registers[0])
+    #     c1 = (ad & 0x00ff)
+    #     c2 = ad >> 8
+    #     c3 = (bd & 0x00ff)
+    #     c4 = bd >> 8
+    #     c5 = (cd & 0x00ff)
+    #     c6 = cd >> 8
+    #     c7 = (dd & 0x00ff)
+    #     c8 = dd >> 8
+    #     c9  = (ed & 0x00ff)
+    #     c10 = ed >> 8
+    #     s_n = chr(c1)+chr(c2)+chr(c3)+chr(c4)+chr(c5)+chr(c6)+chr(c7)+chr(c8)+chr(c9)+chr(c10)
+
+    # except Exception as e:
+    #     # print(f"===========ERROR==========: {e}")
+    #     # traceback.print_exc(file=sys.stdout)
+    #     logging.error(traceback.format_exc())
+    #     pass
+
+
     if cam_on:
         try:
-            # for i in range(len(cameras)):
-            #     grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
-            #     try:
-            #         if grabResults[i].GrabSucceeded():
+            for i in range(len(cameras)):
+                grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
+                try:
+                    if grabResults[i].GrabSucceeded():
 
-            #             images.append(converter.Convert(grabResults[i]))
-            #             images[i] = images[i].GetArray()
-            #             images[i] = cv2.resize(images[i], (imgsize,imgsize))
+                        images.append(converter.Convert(grabResults[i]))
+                        images[i] = images[i].GetArray()
+                        images[i] = cv2.resize(images[i], (imgsize,imgsize))
 
 
-            #             #### mask area end ####
-            #     except Exception as e:
-            #         # print(f"===========ERROR==========: {e}")
-            #         # traceback.print_exc(file=sys.stdout)
-            #         continue
+                        #### mask area end ####
+                except Exception as e:
+                    # print(f"===========ERROR==========: {e}")
+                    # traceback.print_exc(file=sys.stdout)
+                    continue
 
 
             try:
-            #     # 사진 3장 합치기
-            #     channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
-            #     merge_img = imgmerge.merge(images, channel) # 합치기
-                merge_start = threading.Thread(target=camara_img_merge,args=())
-                merge_start.start()
-                merge_start.join()
+                # 사진 3장 합치기
+                channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+                merge_img = imgmerge.merge(images, channel) # 합치기
+                # merge_start = threading.Thread(target=camara_img_merge,args=())
+                # merge_start.start()
+                # merge_start.join()
 
-                merge_img = q.get()
+                # merge_img = q.get()
                 # cv2.imshow('title1', merge_img)# cv2.resize(img1r, (330,330)))
                 # cv2.waitKey(0)
                 
@@ -747,8 +844,9 @@ def detect_camera():
                     x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
                     if True: # 이미 발견되지 않았으면(detected list에 없으면)
                     # if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
-                        if(conf_max>=0.70):
+                        if(conf_max>=0.50):
                             time2 = int(date.get_time_millisec())
+                            s_n = plc_getserial(client)
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
                             save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
@@ -799,15 +897,24 @@ def detect_camera():
                         else:
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under50/box/' + detected_time + '.jpg', result[0].plot()))
                             save_thread3.start()
                             save_thread3.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under50/Original/' + detected_time + '.jpg', merge_img))
                             save_thread4.start()
                             save_thread4.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
-                            
+                else:
+                    detected_time = date.get_time_millisec()[0:16]
+                    detected_date = date.get_date_in_yyyymmdd()
+                    # save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/box/' + detected_time + '.jpg', result[0].plot()))
+                    # save_thread3.start()
+                    # save_thread3.join()
+                    # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
+                    save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', merge_img))
+                    save_thread4.start()
+                    save_thread4.join()
 
                 time4 = int(date.get_time_millisec())
                 diff = difference(time3, time4)
@@ -837,9 +944,12 @@ def detect_camera():
             pass
             win.destroy()
 
+check_status = 1
+
 def start_cam():
-    global cam_on
+    global cam_on, check_status
     start_btn_check()
+    
     if cam_on == False :
         # stop_cam()
         cam_on = True
@@ -916,4 +1026,3 @@ finally:
     # print("Sent modbus [1,0,0]")
     # print('fin')
 ######  tkinter  start   ######
-  
