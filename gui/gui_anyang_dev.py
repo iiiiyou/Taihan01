@@ -288,6 +288,15 @@ def write_detected_sql(mmddhhnnss, serial_number, err_cnt_array, d_meter, type, 
 def write_start_sql(mmddhhnnss, cable_area_base):
     start.write_sql3(mmddhhnnss, cable_area_base)
 
+
+# image gamma_correction
+def gamma_correction(image, gamma):
+    lookUpTable = np.empty((1, 256), np.uint8)
+    for i in range(256):
+        lookUpTable[0, i] = np.clip(pow(i / 255.0, gamma) * 255.0, 0, 255)
+    gamma_image = cv2.LUT(image, lookUpTable)
+    return gamma_image
+
 # PLC readcoil status
 def plc_status(client):
     try:
@@ -831,6 +840,7 @@ def detect_camera():
                 time1 = int(date.get_time_millisec())
                 conf_max=0
 
+                gamma_value = 0.6
 
                 if (result[0].boxes.shape[0] > 0) and True :
                 # if (result[0].boxes.shape[0] > 0) and (time1 - time2 > (100000*1)) : # 0.1초 * 5
@@ -849,11 +859,11 @@ def detect_camera():
                             s_n = plc_getserial(client)
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(), gamma_value)))
                             save_thread1.start()
                             save_thread1.join()
                             # cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
-                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', gamma_correction(merge_img, gamma_value)))
                             save_thread2.start()
                             save_thread2.join()
                             # cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
@@ -897,11 +907,11 @@ def detect_camera():
                         else:
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under50/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under50/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(),gamma_value)))
                             save_thread3.start()
                             save_thread3.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under50/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under50/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
                             save_thread4.start()
                             save_thread4.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
@@ -912,7 +922,7 @@ def detect_camera():
                     # save_thread3.start()
                     # save_thread3.join()
                     # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                    save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', merge_img))
+                    save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
                     save_thread4.start()
                     save_thread4.join()
 
