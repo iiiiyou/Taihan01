@@ -32,8 +32,8 @@ logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 # model = YOLO('C:/source/models/taihanfiber_13-1_20250325_yolo11m-seg_best.pt') # pruning 적용
 model = YOLO('C:/source/models/taihanfiber_14-1_20250406_yolo11m-seg_best.pt') # pruning 적용
 imgsize = 640
-confidence = 0.48
-reset_confidence = 0.48
+confidence = 0.5
+reset_confidence = 0.5
 # 케이블 면적 기준 값
 cable_area_base = 0
 
@@ -733,9 +733,9 @@ def detect_camera():
     makedirs(path)
     path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
     makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under50/box/'
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under58/box/'
     makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under50/Original/'
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under58/Original/'
     makedirs(path)
     # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/box/'
     # makedirs(path)
@@ -854,7 +854,7 @@ def detect_camera():
                     x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
                     if True: # 이미 발견되지 않았으면(detected list에 없으면)
                     # if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
-                        if(conf_max>=0.50):
+                        if(conf_max>=0.58):
                             time2 = int(date.get_time_millisec())
                             s_n = plc_getserial(client)
                             detected_time = date.get_time_millisec()[0:16]
@@ -907,11 +907,11 @@ def detect_camera():
                         else:
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under50/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(),gamma_value)))
+                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under58/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(),gamma_value)))
                             save_thread3.start()
                             save_thread3.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under50/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
+                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under58/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
                             save_thread4.start()
                             save_thread4.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
