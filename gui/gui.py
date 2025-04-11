@@ -29,8 +29,8 @@ import queue
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-# model = YOLO('C:/source/models/taihanfiber_13-1_20250325_yolo11m-seg_best.pt') # pruning 적용
-model = YOLO('C:/source/models/taihanfiber_14-1_20250406_yolo11m-seg_best.pt') # pruning 적용
+model = YOLO('C:/source/models/taihanfiber_14-1_20250409_yolo11s-seg_best.pt') # pruning 적용
+# model = YOLO('C:/source/models/taihanfiber_14-1_20250406_yolo11m-seg_best.pt') # pruning 적용
 imgsize = 640
 confidence = 0.5
 reset_confidence = 0.5
