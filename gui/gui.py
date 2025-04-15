@@ -32,8 +32,8 @@ logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 model = YOLO('C:/source/models/taihanfiber_14-1_20250409_yolo11s-seg_best.pt') # pruning 적용
 # model = YOLO('C:/source/models/taihanfiber_14-1_20250406_yolo11m-seg_best.pt') # pruning 적용
 imgsize = 640
-confidence = 0.5
-reset_confidence = 0.5
+confidence = 0.48
+reset_confidence = 0.48
 # 케이블 면적 기준 값
 cable_area_base = 0
 
@@ -854,7 +854,7 @@ def detect_camera():
                     x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
                     if True: # 이미 발견되지 않았으면(detected list에 없으면)
                     # if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
-                        if(conf_max>=0.58):
+                        if(conf_max>=0.50):
                             time2 = int(date.get_time_millisec())
                             s_n = plc_getserial(client)
                             detected_time = date.get_time_millisec()[0:16]
