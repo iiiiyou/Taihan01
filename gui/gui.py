@@ -32,8 +32,8 @@ logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 model = YOLO('C:/source/models/taihanfiber_14-1_20250409_yolo11s-seg_best.pt') # pruning 적용
 # model = YOLO('C:/source/models/taihanfiber_14-1_20250406_yolo11m-seg_best.pt') # pruning 적용
 imgsize = 640
-confidence = 0.48
-reset_confidence = 0.48
+confidence = 0.60
+reset_confidence = 0.60
 # 케이블 면적 기준 값
 cable_area_base = 0
 
@@ -915,7 +915,7 @@ def detect_camera():
                             save_thread3.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
                             # save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under58/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
-                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under58/Original/' + detected_time + '.jpg', merge_img,gamma_value))
+                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under58/Original/' + detected_time + '.jpg', merge_img))
                             save_thread4.start()
                             save_thread4.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
@@ -927,7 +927,7 @@ def detect_camera():
                     # save_thread3.join()
                     # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
                     # save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
-                    save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', merge_img,gamma_value))
+                    save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', merge_img))
                     save_thread4.start()
                     save_thread4.join()
 
