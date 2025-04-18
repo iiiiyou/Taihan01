@@ -15,9 +15,9 @@ import os
 import traceback
 import logging
 
-file_path = "C:/source/basler/20240922_taihanfiber_5-2.txt"
+file_path = "C:/source/basler/taihanfiber_14-1_20250409.txt"
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/taihanfiber_12-1_20250309_yolo11m-seg_best.pt')
+model = YOLO('C:/source/models/taihanfiber_14-1_20250409_yolo11s-seg_best.pt')
 # model = YOLO('yolov8s-seg.pt')
 
 
