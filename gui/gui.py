@@ -29,11 +29,11 @@ import queue
 logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-model = YOLO('C:/source/models/taihanfiber_14-1_20250409_yolo11s-seg_best.pt') # pruning 적용
+model = YOLO('C:/source/models/taihanfiber_15-4_20250506_yolo11s-seg_best.pt') # pruning 적용
 # model = YOLO('C:/source/models/taihanfiber_14-1_20250406_yolo11m-seg_best.pt') # pruning 적용
 imgsize = 640
-confidence = 0.60
-reset_confidence = 0.60
+confidence = 0.58
+reset_confidence = 0.58
 # 케이블 면적 기준 값
 cable_area_base = 0
 
@@ -498,7 +498,7 @@ def is_detected(x):
 def check_start():
     global m04, m53m, m54m, s_time, count, detected, mmddhhnnss, check_status
         
-    if(check_status%10==0):
+    if(check_status%20==0):
         start_btn_check()
     elif(check_status==30000):
         check_status=1
@@ -854,7 +854,7 @@ def detect_camera():
                     x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
                     if True: # 이미 발견되지 않았으면(detected list에 없으면)
                     # if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
-                        if(conf_max>=0.50):
+                        if(conf_max>=0.6):
                             time2 = int(date.get_time_millisec())
                             s_n = plc_getserial(client)
                             detected_time = date.get_time_millisec()[0:16]
@@ -919,17 +919,17 @@ def detect_camera():
                             save_thread4.start()
                             save_thread4.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
-                else:
-                    detected_time = date.get_time_millisec()[0:16]
-                    detected_date = date.get_date_in_yyyymmdd()
-                    # save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/box/' + detected_time + '.jpg', result[0].plot()))
-                    # save_thread3.start()
-                    # save_thread3.join()
-                    # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                    # save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
-                    save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', merge_img))
-                    save_thread4.start()
-                    save_thread4.join()
+                # else:
+                #     detected_time = date.get_time_millisec()[0:16]
+                #     detected_date = date.get_date_in_yyyymmdd()
+                #     # save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/box/' + detected_time + '.jpg', result[0].plot()))
+                #     # save_thread3.start()
+                #     # save_thread3.join()
+                #     # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
+                #     # save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
+                #     save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', merge_img))
+                #     save_thread4.start()
+                #     save_thread4.join()
 
                 time4 = int(date.get_time_millisec())
                 diff = difference(time3, time4)
