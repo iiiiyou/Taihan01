@@ -26,14 +26,13 @@ import logging
 import threading
 import queue
 
-logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
-# model = YOLO('C:/source/models/taihanfiber_13-1_20250325_yolo11m-seg_best.pt') # pruning 적용
-model = YOLO('C:/source/models/taihanfiber_14-1_20250406_yolo11m-seg_best.pt') # pruning 적용
+model = YOLO('C:/source/models/taihanfiber_15-4_20250506_yolo11s-seg_best.pt') # pruning 적용
+# model = YOLO('C:/source/models/taihanfiber_14-1_20250406_yolo11m-seg_best.pt') # pruning 적용
 imgsize = 640
-confidence = 0.48
-reset_confidence = 0.48
+confidence = 0.01
+reset_confidence = 0.01
 # 케이블 면적 기준 값
 cable_area_base = 0
 
@@ -74,7 +73,66 @@ converter.OutputBitAlignment = pylon.OutputBitAlignment_MsbAligned
 # Declare the width and height in variables 
 width, height = 1000, 600
 
-  
+
+# Make folders if not exsist #
+def makedirs(path):
+    try:
+        if not os.path.exists(path):
+            os.makedirs(path)
+    except OSError:
+        logging.error(traceback.format_exc())
+        print("Error: Failed to create the directory.")
+# Make folder end #
+
+# --- 로깅 설정 ---
+LOG_DIR = os.path.join('C:/source', 'log')
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE = os.path.join(LOG_DIR, f"app_{date.get_date_in_yyyymmdd()}.log")
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+# date.get_time_millisec()[0:16]
+image_log = date.get_time_millisec()[0:16]
+def camera_frame_log(ctime, detected, confi):
+    file_path = f"C:/source/log/image_log_{image_log[0:8]}_{image_log[8:14]}_{image_log[14:16]}.log"
+    with open(file_path, "a") as file:
+        file.write(f"{ctime[0:8]}\t{ctime[8:10]}\t{ctime[10:12]}\t{ctime[12:14]}\t{ctime[14:16]}\t{detected}\t{str(confi)}\n")
+
+camera_frame_log(date.get_time_millisec()[0:16], "start", "0")
+time.sleep(0.01)
+camera_frame_log(date.get_time_millisec()[0:16], "start", "0")
+
+####### Make imange dir start ######
+run_date = date.get_date_in_yyyymmdd()
+def make_init_dir():
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under60/box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under60/Original/'
+    makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/box/'
+    # makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/Original/'
+    makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
+    # makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
+    # makedirs(path)
+
+make_init_dir()
+####### Make imange dir end ######
+
+def difference(before, after):
+    diff = after - before
+    return diff
+
+
 ######  tkinter  start ######
 # Google search: Tkinter geometry site:www.geeksforgeeks.org
 # https://076923.github.io/posts/Python-tkinter-12/
@@ -455,16 +513,6 @@ def manual_reset():
 
 #manual_reset 끝
 
-# Make folders if not exsist #
-def makedirs(path):
-    try:
-        if not os.path.exists(path):
-            os.makedirs(path)
-    except OSError:
-        logging.error(traceback.format_exc())
-        print("Error: Failed to create the directory.")
-# Make folder end #
-
 time1, time2 = 0, 0
 time3, time4 = 0, 0
 time5, time6 = 0, 0
@@ -498,7 +546,7 @@ def is_detected(x):
 def check_start():
     global m04, m53m, m54m, s_time, count, detected, mmddhhnnss, check_status
         
-    if(check_status%10==0):
+    if(check_status%20==0):
         start_btn_check()
     elif(check_status==30000):
         check_status=1
@@ -577,6 +625,9 @@ def check_start():
         # confidence_init() 
         detect_camera()
 
+        # image 로그 파일명
+        global image_log
+        image_log = date.get_time_millisec()[0:16]
         
         file_path = "C:/source/log/"+str(date.get_date_in_yyyymmdd())+"_detected.txt"
         x = sorted(detected)
@@ -627,7 +678,7 @@ def camara_img_merge():
         for i in range(len(cameras)):
             grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
             try: 
-                print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
+                # print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
                 if grabResults[i].GrabSucceeded():
 
                     images.append(converter.Convert(grabResults[i]))
@@ -662,7 +713,7 @@ def show_camera():
             for i in range(len(cameras)):
                 grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
                 try: 
-                    print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
+                    # print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
                     if grabResults[i].GrabSucceeded():
 
                         images.append(converter.Convert(grabResults[i]))
@@ -713,15 +764,7 @@ def show_camera():
         label_camera1.after(30, check_start)
                 ######  tkinter  end   ###### 
 
-def difference(before, after):
-    diff = after - before
-    return diff
 
-camera_log_start_time = date.get_time_millisec()
-def camera_frame_log(ctime, detected, confi):
-    file_path = "C:/source/log/camera_"+camera_log_start_time+".txt"
-    with open(file_path, "a") as file:
-        file.write(ctime + "__" + detected + "__" + str(confi) + "\n")
 
 def detect_camera():
     global s_time, count, client
@@ -729,22 +772,9 @@ def detect_camera():
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
     masks = []
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/box/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under50/box/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under50/Original/'
-    makedirs(path)
-    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/box/'
-    # makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/Original/'
-    makedirs(path)
-    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
-    # makedirs(path)
-    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
-    # makedirs(path)
+
+    if run_date != date.get_date_in_yyyymmdd():
+        make_init_dir()
 
 
     global time3, time4
@@ -854,16 +884,18 @@ def detect_camera():
                     x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
                     if True: # 이미 발견되지 않았으면(detected list에 없으면)
                     # if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
-                        if(conf_max>=0.50):
+                        if(conf_max>=0.02):
                             time2 = int(date.get_time_millisec())
                             s_n = plc_getserial(client)
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(), gamma_value)))
+                            # save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(), gamma_value)))
+                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
                             save_thread1.start()
                             save_thread1.join()
                             # cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
-                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', gamma_correction(merge_img, gamma_value)))
+                            # save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', gamma_correction(merge_img, gamma_value)))
+                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img))
                             save_thread2.start()
                             save_thread2.join()
                             # cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
@@ -904,17 +936,21 @@ def detect_camera():
 
                             # detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
                             # time.sleep(1)
+                            camera_frame_log(detected_time, "d", round(conf_max.item(), 3))
                         else:
                             detected_time = date.get_time_millisec()[0:16]
                             detected_date = date.get_date_in_yyyymmdd()
-                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under50/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(),gamma_value)))
+                            # save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(),gamma_value)))
+                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/box/' + detected_time + '.jpg', result[0].plot()))
                             save_thread3.start()
                             save_thread3.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under50/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
+                            # save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
+                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/Original/' + detected_time + '.jpg', merge_img))
                             save_thread4.start()
                             save_thread4.join()
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
+                            camera_frame_log(detected_time, "n", round(conf_max.item(), 3))
                 else:
                     detected_time = date.get_time_millisec()[0:16]
                     detected_date = date.get_date_in_yyyymmdd()
@@ -922,9 +958,13 @@ def detect_camera():
                     # save_thread3.start()
                     # save_thread3.join()
                     # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                    save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
-                    save_thread4.start()
-                    save_thread4.join()
+                    # save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
+
+                    # NotDetected image 저장장
+                    # save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', merge_img))
+                    # save_thread4.start()
+                    # save_thread4.join()
+                    camera_frame_log(detected_time, "x", "0")
 
                 time4 = int(date.get_time_millisec())
                 diff = difference(time3, time4)
