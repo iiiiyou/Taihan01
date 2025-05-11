@@ -101,9 +101,9 @@ def camera_frame_log(ctime, detected, confi):
     with open(file_path, "a") as file:
         file.write(f"{ctime[0:8]}\t{ctime[8:10]}\t{ctime[10:12]}\t{ctime[12:14]}\t{ctime[14:16]}\t{detected}\t{str(confi)}\n")
 
-camera_frame_log(date.get_time_millisec()[0:16], "start", "0")
-time.sleep(0.01)
-camera_frame_log(date.get_time_millisec()[0:16], "start", "0")
+# camera_frame_log(date.get_time_millisec()[0:16], "start", "0")
+# time.sleep(0.01)
+# camera_frame_log(date.get_time_millisec()[0:16], "start", "0")
 
 ####### Make imange dir start ######
 run_date = date.get_date_in_yyyymmdd()
@@ -229,8 +229,11 @@ value_speed1 = Label(win)
 value_speed1.config(text = "준비 중")
 value_speed1.place(x=120, y=120)
 def show_speed1(speed):
-    speed = speed / 1000
-    speed = f"{speed:,.0f} ms"
+    # speed = speed / 1000
+    if speed < 100:
+       speed = f" {speed:,.0f} ms" 
+    else:
+        speed = f"{speed:,.0f} ms"
     value_speed1.config(text = speed)
 # value_cable2.pack()
 
@@ -245,8 +248,11 @@ value_speed2 = Label(win)
 value_speed2.config(text = "준비 중")
 value_speed2.place(x=120, y=140)
 def show_speed2(speed):
-    speed = 1 / (speed / 1000000)
-    speed = f"{speed:,.0f} fps"
+    speed = 1 / (speed / 1000)
+    if speed < 100:
+        speed = f" {speed:,.0f} fps"
+    else:
+        speed = f"{speed:,.0f} fps"
     value_speed2.config(text = speed)
 # value_cable2.pack()
 
@@ -262,9 +268,12 @@ value_speed3 = Label(win)
 value_speed3.config(text = "준비 중")
 value_speed3.place(x=120, y=160)
 def show_speed3(speed):
-    speed = 1 / (speed / 1000000)
+    speed = (1 / speed)*1000
     speed = speed * 6
-    speed = f"{speed:,.0f} cm/s"
+    if speed < 100:
+        speed = f" {speed:,.0f} cm/s"
+    else:
+        speed = f"{speed:,.0f} cm/s"
     value_speed3.config(text = speed)
 # value_cable2.pack()
 
@@ -516,6 +525,7 @@ def manual_reset():
 time1, time2 = 0, 0
 time3, time4 = 0, 0
 time5, time6 = 0, 0
+previous_loop_start_time = None
 ######  Get m53, m54 Start   ######
 m01, m04, m53, m54, s_time, count, mmddhhnnss = False, False, False, False, 0, 0, 0
 # m53, m54 = False, False
@@ -813,8 +823,7 @@ def detect_camera():
     #     logging.error(traceback.format_exc())
     #     pass
 
-
-    if cam_on:
+    if cam_on:                
         try:
             for i in range(len(cameras)):
                 grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
@@ -871,6 +880,8 @@ def detect_camera():
                 conf_max=0
 
                 gamma_value = 0.6
+                detected_time = str(time1)[0:16]
+                detected_date = str(time1)[0:8]
 
                 if (result[0].boxes.shape[0] > 0) and True :
                 # if (result[0].boxes.shape[0] > 0) and (time1 - time2 > (100000*1)) : # 0.1초 * 5
@@ -887,8 +898,8 @@ def detect_camera():
                         if(conf_max>=0.02):
                             time2 = int(date.get_time_millisec())
                             s_n = plc_getserial(client)
-                            detected_time = date.get_time_millisec()[0:16]
-                            detected_date = date.get_date_in_yyyymmdd()
+                            # detected_time = date.get_time_millisec()[0:16]
+                            # detected_date = date.get_date_in_yyyymmdd()
                             # save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(), gamma_value)))
                             save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
                             save_thread1.start()
@@ -938,8 +949,8 @@ def detect_camera():
                             # time.sleep(1)
                             camera_frame_log(detected_time, "d", round(conf_max.item(), 3))
                         else:
-                            detected_time = date.get_time_millisec()[0:16]
-                            detected_date = date.get_date_in_yyyymmdd()
+                            # detected_time = date.get_time_millisec()[0:16]
+                            # detected_date = date.get_date_in_yyyymmdd()
                             # save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(),gamma_value)))
                             save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/box/' + detected_time + '.jpg', result[0].plot()))
                             save_thread3.start()
@@ -952,8 +963,8 @@ def detect_camera():
                             # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
                             camera_frame_log(detected_time, "n", round(conf_max.item(), 3))
                 else:
-                    detected_time = date.get_time_millisec()[0:16]
-                    detected_date = date.get_date_in_yyyymmdd()
+                    # detected_time = date.get_time_millisec()[0:16]
+                    # detected_date = date.get_date_in_yyyymmdd()
                     # save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/box/' + detected_time + '.jpg', result[0].plot()))
                     # save_thread3.start()
                     # save_thread3.join()
@@ -966,11 +977,33 @@ def detect_camera():
                     # save_thread4.join()
                     camera_frame_log(detected_time, "x", "0")
 
-                time4 = int(date.get_time_millisec())
-                diff = difference(time3, time4)
-                show_speed1(diff)
-                show_speed2(diff)
-                show_speed3(diff)
+                # 이번 루프 시작 시간 기록!
+                global previous_loop_start_time
+                current_loop_start_time = time.time()
+                # print(f"이번 루프는 {i}번째야!")
+                # 첫 번째 루프가 아니라면 (이전 루프 시작 시간이 있다면)
+                if previous_loop_start_time is not None:
+                    # 현재 루프 시작 시간과 이전 루프 시작 시간의 차이를 계산!
+                    time_difference = (current_loop_start_time - previous_loop_start_time) * 1000
+                    # print(f"👉 이전 루프 시작 후 {time_difference:.0f}밀리초 만에 이번 루프가 시작됐네!\n") # 이것도 소수점 4자리까지!
+
+                    show_speed1(time_difference)
+                    show_speed2(time_difference)
+                    show_speed3(time_difference)
+
+                # else:
+                #     # 첫 번째 루프일 때는 이전 루프가 없으니까 특별히 알려주자!
+                #     print("앗! 첫 번째 루프 시작이야! 이전 루프는 없어!\n")
+
+                # 이번 루프 시작 시간을 다음 루프를 위해 '이전 루프 시작 시간'으로 저장해두자!
+                previous_loop_start_time = current_loop_start_time                    
+
+                # time4 = int(date.get_time_millisec())
+                # diff = difference(time3, time4)
+                # print(diff)
+                # show_speed1(diff)
+                # show_speed2(diff)
+                # show_speed3(diff)
 
                 # Repeat the same process after every 10 milliseconds
                 label_camera1.after(30, check_start)
