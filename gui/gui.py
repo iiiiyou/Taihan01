@@ -16,8 +16,8 @@ import sys
 sys.path.append('C:/source')
 import util.format_date_time as date
 import util.merge as imgmerge
-import SQL.insert_sqllite_start as start
-import SQL.insert_sqllite_detect as detect
+import SQL.insert_sqllite_start_3 as start
+import SQL.insert_sqllite_detect_3 as detect
 import SQL.insert_sqllite_area as areadb
 from pymodbus.client import ModbusTcpClient
 from pymodbus.transaction import *
@@ -26,14 +26,14 @@ import logging
 import threading
 import queue
 
-logging.basicConfig(filename='C:/source/test.log', level=logging.ERROR)
 
 # Load the YOLOv8 model#
+# model = YOLO('C:/source/models/taihanfiber_15-4_20250511_yolov8s-seg_best.pt') # pruning 적용
 model = YOLO('C:/source/models/taihanfiber_15-4_20250506_yolo11s-seg_best.pt') # pruning 적용
-# model = YOLO('C:/source/models/taihanfiber_14-1_20250406_yolo11m-seg_best.pt') # pruning 적용
 imgsize = 640
 confidence = 0.5
-reset_confidence = 0.5
+reset_confidence = confidence
+critical = 0.55
 # 케이블 면적 기준 값
 cable_area_base = 0
 
@@ -74,7 +74,66 @@ converter.OutputBitAlignment = pylon.OutputBitAlignment_MsbAligned
 # Declare the width and height in variables 
 width, height = 1000, 600
 
-  
+
+# Make folders if not exsist #
+def makedirs(path):
+    try:
+        if not os.path.exists(path):
+            os.makedirs(path)
+    except OSError:
+        logging.error(traceback.format_exc())
+        print("Error: Failed to create the directory.")
+# Make folder end #
+
+# --- 로깅 설정 ---
+LOG_DIR = os.path.join('C:/source', 'log')
+os.makedirs(LOG_DIR, exist_ok=True)
+LOG_FILE = os.path.join(LOG_DIR, f"app_{date.get_date_in_yyyymmdd()}.log")
+logging.basicConfig(
+    filename=LOG_FILE,
+    level=logging.ERROR,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
+
+# date.get_time_millisec()[0:16]
+image_log = date.get_time_millisec()[0:16]
+def camera_frame_log(ctime, detected, confi):
+    file_path = f"C:/source/log/image_log_{image_log[0:8]}_{image_log[8:14]}_{image_log[14:16]}.log"
+    with open(file_path, "a") as file:
+        file.write(f"{ctime[0:8]}\t{ctime[8:10]}\t{ctime[10:12]}\t{ctime[12:14]}\t{ctime[14:16]}\t{detected}\t{str(confi)}\n")
+
+# camera_frame_log(date.get_time_millisec()[0:16], "start", "0")
+# time.sleep(0.01)
+# camera_frame_log(date.get_time_millisec()[0:16], "start", "0")
+
+####### Make imange dir start ######
+run_date = date.get_date_in_yyyymmdd()
+def make_init_dir():
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under60/box/'
+    makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under60/Original/'
+    makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/box/'
+    # makedirs(path)
+    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/Original/'
+    makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
+    # makedirs(path)
+    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
+    # makedirs(path)
+
+make_init_dir()
+####### Make imange dir end ######
+
+def difference(before, after):
+    diff = after - before
+    return diff
+
+
 ######  tkinter  start ######
 # Google search: Tkinter geometry site:www.geeksforgeeks.org
 # https://076923.github.io/posts/Python-tkinter-12/
@@ -106,31 +165,31 @@ def show_camera1(camera1):
 # label_camera1.pack()
 
 # 검사 상태 라벨
-label_cable1 = Label(win)
-label_cable1.config(text = "검사 상태: ")
-label_cable1.place(x=20, y=60)
+label_inference_status_1 = Label(win)
+label_inference_status_1.config(text = "검사 상태: ")
+label_inference_status_1.place(x=20, y=60)
 # label_cable1.pack()
 
 # 검사 상태 값
-value_cable1= Label(win)
-value_cable1.config(text = "준비 중")
-value_cable1.place(x=120, y=60)
-def show_area_base(mask_area_base):
-    value_cable1.config(text = mask_area_base)
+value_inference_status_1= Label(win)
+value_inference_status_1.config(text = "준비 중")
+value_inference_status_1.place(x=120, y=60)
+def show_inference_status(inference_status):
+    value_inference_status_1.config(text = inference_status)
 # value_cable1.pack()
 
 # Confidence 라벨
-label_cable2 = Label(win)
-label_cable2.config(text = "Confidence: ")
-label_cable2.place(x=20, y=80)
+label_confidence1 = Label(win)
+label_confidence1.config(text = "Confidence: ")
+label_confidence1.place(x=20, y=80)
 # label_cable2.pack()
 
 # Confidence 값
-value_cable2 = Label(win)
-value_cable2.config(text = "준비 중")
-value_cable2.place(x=120, y=80)
-def show_mask_area(current_mask_area):
-    value_cable2.config(text = current_mask_area)
+value_confidence1 = Label(win)
+value_confidence1.config(text = "준비 중")
+value_confidence1.place(x=120, y=80)
+def show_confidence_value(confidence_value):
+    value_confidence1.config(text = confidence_value)
 # value_cable2.pack()
 
 # function to display user text when 
@@ -139,6 +198,7 @@ def confidence_change():
     global confidence
     new_confidence = float(entry_confidence.get())
     confidence = new_confidence
+    show_confidence_value(confidence)
 
 def confidence_init():
     global reset_confidence
@@ -171,9 +231,10 @@ value_speed1 = Label(win)
 value_speed1.config(text = "준비 중")
 value_speed1.place(x=120, y=120)
 def show_speed1(speed):
-    speed = speed / 1000
-    speed = f"{speed:,.0f} ms"
-    value_speed1.config(text = speed)
+    # speed = speed / 1000
+    ms = f"{speed:,.0f}"
+    ms = f"{ms} ms"
+    value_speed1.config(text = ms)
 # value_cable2.pack()
 
 # 처리 속도 라벨
@@ -187,8 +248,11 @@ value_speed2 = Label(win)
 value_speed2.config(text = "준비 중")
 value_speed2.place(x=120, y=140)
 def show_speed2(speed):
-    speed = 1 / (speed / 1000000)
-    speed = f"{speed:,.0f} fps"
+    speed = 1 / (speed / 1000)
+    if speed < 100:
+        speed = f" {speed:,.0f} fps"
+    else:
+        speed = f"{speed:,.0f} fps"
     value_speed2.config(text = speed)
 # value_cable2.pack()
 
@@ -204,9 +268,12 @@ value_speed3 = Label(win)
 value_speed3.config(text = "준비 중")
 value_speed3.place(x=120, y=160)
 def show_speed3(speed):
-    speed = 1 / (speed / 1000000)
+    speed = (1 / speed)*1000
     speed = speed * 6
-    speed = f"{speed:,.0f} cm/s"
+    if speed < 100:
+        speed = f" {speed:,.0f} cm/s"
+    else:
+        speed = f"{speed:,.0f} cm/s"
     value_speed3.config(text = speed)
 # value_cable2.pack()
 
@@ -429,8 +496,8 @@ def startbtn():
         client = ModbusTcpClient('192.168.102.20' ,502)
     result_m01 = client.read_coils(0x01)
 
-    show_area_base("준비 중")
-    show_mask_area("준비 중")
+    show_inference_status("준비 중")
+    show_confidence_value("준비 중")
     if result_m01.bits[0] : # 1(True) 이면
         client.write_coils(0x01,0)
     else:
@@ -450,24 +517,15 @@ def manual_reset():
 
     # 화면에 현재 cable area 표시 
     start_btn_check()
-    show_area_base("준비 중")
-    show_mask_area("준비 중")
+    show_inference_status("준비 중")
+    show_confidence_value("준비 중")
 
 #manual_reset 끝
-
-# Make folders if not exsist #
-def makedirs(path):
-    try:
-        if not os.path.exists(path):
-            os.makedirs(path)
-    except OSError:
-        logging.error(traceback.format_exc())
-        print("Error: Failed to create the directory.")
-# Make folder end #
 
 time1, time2 = 0, 0
 time3, time4 = 0, 0
 time5, time6 = 0, 0
+previous_loop_start_time = None
 ######  Get m53, m54 Start   ######
 m01, m04, m53, m54, s_time, count, mmddhhnnss = False, False, False, False, 0, 0, 0
 # m53, m54 = False, False
@@ -502,8 +560,8 @@ def check_start():
         start_btn_check()
     elif(check_status==30000):
         check_status=1
-    else:
-        print("")
+    # else:
+    #     print("")
         
     check_status+=1
     
@@ -569,7 +627,7 @@ def check_start():
         
         start_sql_thread = threading.Thread(target=write_start_sql, args=(mmddhhnnss, cable_area_base))
         start_sql_thread.start()
-        start_sql_thread.join()
+        # start_sql_thread.join()
         # start.write_sql3(mmddhhnnss, cable_area_base)
         
         # print("   ", i," :Detact 실행(Start 버튼 누른 후)")
@@ -577,6 +635,9 @@ def check_start():
         # confidence_init() 
         detect_camera()
 
+        # image 로그 파일명
+        global image_log
+        image_log = date.get_time_millisec()[0:16]
         
         file_path = "C:/source/log/"+str(date.get_date_in_yyyymmdd())+"_detected.txt"
         x = sorted(detected)
@@ -586,6 +647,8 @@ def check_start():
 
         detected = []
         m53m, m54m = m53, m54
+        show_inference_status("검사 중")
+        show_confidence_value(confidence)
     # Start 버튼 눌른 후 다음 Start 버튼 누르기 전인가?
     else:
         # print("   ", i," :Detact 실행")
@@ -627,7 +690,7 @@ def camara_img_merge():
         for i in range(len(cameras)):
             grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
             try: 
-                print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
+                # print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
                 if grabResults[i].GrabSucceeded():
 
                     images.append(converter.Convert(grabResults[i]))
@@ -662,7 +725,7 @@ def show_camera():
             for i in range(len(cameras)):
                 grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
                 try: 
-                    print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
+                    # print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
                     if grabResults[i].GrabSucceeded():
 
                         images.append(converter.Convert(grabResults[i]))
@@ -710,18 +773,10 @@ def show_camera():
             win.destroy()
             # pass
         # Repeat the same process after every 10 milliseconds
-        label_camera1.after(30, check_start)
+        label_camera1.after(1, check_start)
                 ######  tkinter  end   ###### 
 
-def difference(before, after):
-    diff = after - before
-    return diff
 
-camera_log_start_time = date.get_time_millisec()
-def camera_frame_log(ctime, detected, confi):
-    file_path = "C:/source/log/camera_"+camera_log_start_time+".txt"
-    with open(file_path, "a") as file:
-        file.write(ctime + "__" + detected + "__" + str(confi) + "\n")
 
 def detect_camera():
     global s_time, count, client
@@ -729,22 +784,9 @@ def detect_camera():
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
     masks = []
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/box/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/Original/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under60/box/'
-    makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_under60/Original/'
-    makedirs(path)
-    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/box/'
-    # makedirs(path)
-    path = 'C:/image/'+date.get_date_in_yyyymmdd()+'_notdetected/Original/'
-    makedirs(path)
-    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_box/'
-    # makedirs(path)
-    # path = 'C:/image/'+date.get_date_in_yyyymmdd()+'/area_Original/'
-    # makedirs(path)
+
+    if run_date != date.get_date_in_yyyymmdd():
+        make_init_dir()
 
 
     global time3, time4
@@ -783,8 +825,7 @@ def detect_camera():
     #     logging.error(traceback.format_exc())
     #     pass
 
-
-    if cam_on:
+    if cam_on:                
         try:
             for i in range(len(cameras)):
                 grabResults.append(cameras[i].RetrieveResult(5000, pylon.TimeoutHandling_ThrowException))
@@ -807,17 +848,10 @@ def detect_camera():
                 # 사진 3장 합치기
                 channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
                 merge_img = imgmerge.merge(images, channel) # 합치기
-                # merge_start = threading.Thread(target=camara_img_merge,args=())
-                # merge_start.start()
-                # merge_start.join()
+               
 
-                # merge_img = q.get()
-                # cv2.imshow('title1', merge_img)# cv2.resize(img1r, (330,330)))
-                # cv2.waitKey(0)
-                
-
-                show_area_base("검사 중")
-                show_mask_area(confidence)   
+                # show_inference_status("검사 중")
+                # show_confidence_value(confidence)   
 
                 # Run YOLOv8 inference on the frame
                 # results1 = model(img1)
@@ -841,6 +875,8 @@ def detect_camera():
                 conf_max=0
 
                 gamma_value = 0.6
+                detected_time = str(time1)[0:16]
+                detected_date = str(time1)[0:8]
 
                 if (result[0].boxes.shape[0] > 0) and True :
                 # if (result[0].boxes.shape[0] > 0) and (time1 - time2 > (100000*1)) : # 0.1초 * 5
@@ -854,93 +890,121 @@ def detect_camera():
                     x1, y1, w1, h1 = int(x1), int(y1), int(w1), int(h1)
                     if True: # 이미 발견되지 않았으면(detected list에 없으면)
                     # if is_detected(x1)== True: # 이미 발견되지 않았으면(detected list에 없으면)
-                        if(conf_max>=0.6):
-                            time2 = int(date.get_time_millisec())
-                            s_n = plc_getserial(client)
-                            detected_time = date.get_time_millisec()[0:16]
-                            detected_date = date.get_date_in_yyyymmdd()
-                            # save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(), gamma_value)))
-                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
-                            save_thread1.start()
-                            save_thread1.join()
-                            # cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
-                            # save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', gamma_correction(merge_img, gamma_value)))
-                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img))
-                            save_thread2.start()
-                            save_thread2.join()
-                            # cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
+                        if(conf_max>=critical):
+                            # time2 = int(date.get_time_millisec())
+
                             count = count + 1
 
+                            #########################
+                            #### PLC connect 시작 ####
+                            s_n = plc_getserial(client)
                             # PLC에서 제품 에러 수 가져오기
                             result_err_cnt= client.read_holding_registers(0x0008)
                             err_cnt_array = int(result_err_cnt.registers[0])+1
-
                             # s_time(제품 키값), material_number(제품번호), seq2(몇번쨰 생성), d_meter(몇미터에서 생성), type(오류 유형), d_time(감지 시간), image(이미지 위치), area(면적)
+                            # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
+                            client.write_coils(0x0020,1)
+                            client.write_coils(0x0020,0)
+                            m_m = err_cnt_array + 1000
+                            d1000_m  = client.read_holding_registers(m_m)
+                            d_meter = d1000_m.registers[0]                            
+                            #### PLC connect 끝 ####
+                            #########################
+
+
+                            #########################
+                            #### PLC 변수 수동 설정 시작 ####
+                            # s_n = "11111" #str
+                            # err_cnt_array = 11111 #int
+                            # d_meter = "11111" #int
+                            #### PLC 변수 수동 "설정 끝 ####
+                            #########################
 
                             # 감지 시간 저장
                             d_time = int(date.get_time_in_mmddss())
 
-                            # 불량 검출 미터 PLC로 보내고 값 오류 m & ft읽어오기
-                            client.write_coils(0x0020,1)
-                            client.write_coils(0x0020,0)
-                            # m_m = count + 1000
-                            # ft_ft = count + 5000
-                            m_m = err_cnt_array + 1000
-                            # ft_ft = err_cnt_array + 5000
-                            d1000_m  = client.read_holding_registers(m_m)
-                            # d5000_ft = client.read_holding_registers(ft_ft)
-                            d_meter = d1000_m.registers[0]
-                            # d_feet = d5000_ft.registers[0]
-                            
                             # 오류 유형
                             type = "defect"
 
                             # 이미지 저장 위치
                             image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
                             area = 0
-                            # area = int(mean_masks[len(mean_masks)-1])
 
+                            #########################
+                            #### SQL connect 시작 ####
                             save_sql_thread = threading.Thread(target=write_detected_sql, args=(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area))
                             save_sql_thread.start()
-                            save_sql_thread.join()
+                            # save_sql_thread.join()                          
+                            #### SQL connect 끝 ####
+                            #########################
 
                             # detect.write_sql(mmddhhnnss, s_n, err_cnt_array, d_meter, type, d_time, image, area)
                             # time.sleep(1)
+
+                            # image save - thread - start #
+                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread1.start()
+                            # save_thread1.join()
+                            
+                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread2.start()
+                            # save_thread2.join()
+                            # image save - thread - end #
+
+                            # # image save - no thread - start #
+                            # cv2.imwrite('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot())
+                            # cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
+                            # # image save - no thread - end #
+
+                            camera_frame_log(detected_time, "c", round(conf_max.item(), 3))
                         else:
-                            detected_time = date.get_time_millisec()[0:16]
-                            detected_date = date.get_date_in_yyyymmdd()
-                            # save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/box/' + detected_time + '.jpg', gamma_correction(result[0].plot(),gamma_value)))
+                            
+                            # image save - thread - start #
                             save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/box/' + detected_time + '.jpg', result[0].plot()))
                             save_thread3.start()
-                            save_thread3.join()
-                            # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                            # save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
+                            # save_thread3.join()
+                            
                             save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/Original/' + detected_time + '.jpg', merge_img))
                             save_thread4.start()
-                            save_thread4.join()
-                            # cv2.imwrite('C:/image/' + detected_date + '_under70/Original/' + detected_time + '.jpg', merge_img)
-                else:
-                    detected_time = date.get_time_millisec()[0:16]
-                    detected_date = date.get_date_in_yyyymmdd()
-                    # save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/box/' + detected_time + '.jpg', result[0].plot()))
-                    # save_thread3.start()
-                    # save_thread3.join()
-                    # cv2.imwrite('C:/image/' + detected_date + '_under70/box/' + detected_time + '.jpg', result[0].plot())
-                    # save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', gamma_correction(merge_img,gamma_value)))
-                    save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_notdetected/Original/' + detected_time + '.jpg', merge_img))
-                    save_thread4.start()
-                    save_thread4.join()
+                            # save_thread4.join()
+                            # image save - thread - end #
 
-                time4 = int(date.get_time_millisec())
-                diff = difference(time3, time4)
-                show_speed1(diff)
-                show_speed2(diff)
-                show_speed3(diff)
+
+                            # # image save - no thread - start #
+                            # cv2.imwrite('C:/image/' + detected_date + '_under60/box/' + detected_time + '.jpg', result[0].plot())
+                            # cv2.imwrite('C:/image/' + detected_date + '_under60/Original/' + detected_time + '.jpg', merge_img)
+                            # # image save - no thread - end #
+
+
+                            camera_frame_log(detected_time, "n", round(conf_max.item(), 3))
+                else:
+                    camera_frame_log(detected_time, "x", "0")
+
+                # 이번 루프 시작 시간 기록!
+                current_loop_start_time = time.time()
+                # print(f"이번 루프는 {i}번째야!")
+                # 첫 번째 루프가 아니라면 (이전 루프 시작 시간이 있다면)
+                global previous_loop_start_time
+                if previous_loop_start_time is not None:
+                    # 현재 루프 시작 시간과 이전 루프 시작 시간의 차이를 계산!
+                    time_difference = (current_loop_start_time - previous_loop_start_time) * 1000
+                    # print(f"👉 이전 루프 시작 후 {time_difference:.0f}밀리초 만에 이번 루프가 시작됐네!\n") # 이것도 소수점 4자리까지!
+
+                    show_speed1(time_difference)
+                    show_speed2(time_difference)
+                    show_speed3(time_difference)
+
+                # else:
+                #     # 첫 번째 루프일 때는 이전 루프가 없으니까 특별히 알려주자!
+                #     print("앗! 첫 번째 루프 시작이야! 이전 루프는 없어!\n")
+
+                # 이번 루프 시작 시간을 다음 루프를 위해 '이전 루프 시작 시간'으로 저장                
+                previous_loop_start_time = current_loop_start_time                    
 
                 # Repeat the same process after every 10 milliseconds
-                label_camera1.after(30, check_start)
+                label_camera1.after(1, check_start)
 
-                        ######  tkinter  end   ######
+                ######  tkinter  end   ######
                         
             except AttributeError as e:
                 print(f"===========ERROR==========76: {e}")
@@ -957,7 +1021,7 @@ def detect_camera():
             # traceback.print_exc(file=sys.stdout)
             logging.error(traceback.format_exc())
             pass
-            win.destroy()
+            # win.destroy()
 
 check_status = 1
 
@@ -970,9 +1034,9 @@ def start_cam():
         cam_on = True
         # open_camera()
         if m53 + m54 == 1 :
-            show_area_base("검사 중")
+            show_inference_status("검사 중")
         else :
-            show_area_base("준비 중")
+            show_inference_status("준비 중")
         check_start()
 
 def stop_cam():
@@ -980,7 +1044,7 @@ def stop_cam():
     # modbus.write_detected([1,0,0], client)
     # print("Sent modbus [1,0,0]")
     cam_on = False
-    show_area_base("일시정지")
+    show_inference_status("일시정지")
 
 
 ######  tkinter  start   ######
