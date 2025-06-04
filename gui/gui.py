@@ -29,7 +29,7 @@ import queue
 
 # Load the YOLOv8 model#
 # model = YOLO('C:/source/models/taihanfiber_15-4_20250511_yolov8s-seg_best.pt') # pruning 적용
-model = YOLO('C:/source/models/taihanfiber_16-1_20250527_yolo11s-seg_best.pt') # pruning 적용
+model = YOLO('C:/source/models/taihanfiber_17-1_20250603_yolo11s-seg_best.pt') # pruning 적용
 imgsize = 640
 confidence = 0.5
 reset_confidence = confidence

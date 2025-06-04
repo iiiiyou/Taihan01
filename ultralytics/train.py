@@ -4,11 +4,11 @@ import shutil
 
 from roboflow import Roboflow
 
-dataset_name = "taihanfiber_16-1"
+dataset_name = "taihanfiber_17-1"
 if not os.path.exists("datasets/"+dataset_name):
 
     rf = Roboflow(api_key="bxW7hooY5jiknZS3GIxI")
-    project = rf.workspace("i4umaket").project("taihanfiber_16")
+    project = rf.workspace("i4umaket").project("taihanfiber_17")
     version = project.version(1)
     dataset = version.download("yolov11")
 
