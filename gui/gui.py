@@ -704,7 +704,22 @@ def camara_img_merge():
                 pass
                     
         # 사진 3장 합치기
-        channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+
+
+        # ...existing code...
+        try:
+            # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
+            import numpy as np
+            img_array = np.asarray(images[0])
+            channel = 3 if len(img_array.shape) == 3 else 2  # 채널 확인
+        except AttributeError as e:
+            print(f"Error: {e}")
+            channel = None  # 또는 기본값 설정
+        except Exception as e:
+            print(f"Unexpected error: {e}")
+            channel = None
+        # ...existing code...
+
         merge_img = imgmerge.merge(images, channel) # 합치기
         q.put(merge_img)
         
@@ -740,7 +755,22 @@ def show_camera():
             
                        
             # 사진 3장 합치기
-            channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+
+            # ...existing code...
+            try:
+                # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
+                import numpy as np
+                img_array = np.asarray(images[0])
+                channel = 3 if len(img_array.shape) == 3 else 2  # 채널 확인
+            except AttributeError as e:
+                print(f"Error: {e}")
+                channel = None  # 또는 기본값 설정
+            except Exception as e:
+                print(f"Unexpected error: {e}")
+                channel = None
+            # ...existing code...
+
+
             merge_img = imgmerge.merge(images, channel) # 합치기
 
             # camara threading
@@ -846,7 +876,21 @@ def detect_camera():
 
             try:
                 # 사진 3장 합치기
-                channel = 3 if len(images[0].shape) == 3 else 2 # 채널 확인
+
+                # ...existing code...
+                try:
+                    # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
+                    import numpy as np
+                    img_array = np.asarray(images[0])
+                    channel = 3 if len(img_array.shape) == 3 else 2  # 채널 확인
+                except AttributeError as e:
+                    print(f"Error: {e}")
+                    channel = None  # 또는 기본값 설정
+                except Exception as e:
+                    print(f"Unexpected error: {e}")
+                    channel = None
+                # ...existing code...
+
                 merge_img = imgmerge.merge(images, channel) # 합치기
                
 
