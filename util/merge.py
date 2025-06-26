@@ -7,8 +7,10 @@ import logging
 sys.path.append('C:/source')
 import util.format_date_time as date
 
-# 로거 설정 - 파일과 콘솔 모두에 로그 기록
-log_file_path = "C:/source/log/merge_error.log"
+# 로거 설정 - 파일과 콘솔 모두에 로그 기록 (날짜별 파일 생성)
+from datetime import datetime
+current_date = datetime.now().strftime("%Y%m%d")
+log_file_path = f"C:/source/log/merge_error_{current_date}.log"
 os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
 
 logging.basicConfig(
