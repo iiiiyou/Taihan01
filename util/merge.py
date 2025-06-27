@@ -7,20 +7,29 @@ import logging
 sys.path.append('C:/source')
 import util.format_date_time as date
 
-# 로거 설정 - 파일과 콘솔 모두에 로그 기록 (날짜별 파일 생성)
+# 로거 설정 - 파일과 콘솔에 다른 형식으로 로그 기록 (날짜별 파일 생성)
 from datetime import datetime
 current_date = datetime.now().strftime("%Y%m%d")
 log_file_path = f"C:/source/log/merge_error_{current_date}.log"
 os.makedirs(os.path.dirname(log_file_path), exist_ok=True)
 
-logging.basicConfig(
-    level=logging.ERROR,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[
-        logging.FileHandler(log_file_path, encoding='utf-8'),  # 파일에 기록
-        logging.StreamHandler()  # 콘솔에도 출력
-    ]
-)
+# 로거 생성
+logger = logging.getLogger('merge_logger')
+logger.setLevel(logging.ERROR)
+
+# 파일 핸들러 (자세한 정보)
+file_handler = logging.FileHandler(log_file_path, encoding='utf-8')
+file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(file_formatter)
+
+# 콘솔 핸들러 (간단한 시간만)
+console_handler = logging.StreamHandler()
+console_formatter = logging.Formatter('%(asctime)s', datefmt='%Y-%m-%d %H:%M:%S')
+console_handler.setFormatter(console_formatter)
+
+# 핸들러 추가
+logger.addHandler(file_handler)
+logger.addHandler(console_handler)
 
 files = os.listdir()
 
@@ -77,16 +86,14 @@ def merge(imgs, channel):
         stacked_image.shape
 
         # Save the stacked image
-        # cv2.imwrite(fileapth+"stacked_image_"+str(channel)+"_"+date.get_time_millisec()+".jpg", stacked_image)
-
-        # img = cv2.imread(fileapth+'stacked_image.jpg',0)
+        # cv2.imwrite(fileapth+"stacked_image_"+str(channel)+"_"+date.get_time_millisec()+".jpg", stacked_image)        # img = cv2.imread(fileapth+'stacked_image.jpg',0)
         # plt.imshow(img, cmap='gray')
         # height, width = img.shape
         return stacked_image
     
     except Exception as e:
         # 오류 로그 기록
-        logging.error(f"merge 함수에서 오류 발생: {str(e)}, 입력 이미지 수: {len(imgs) if imgs else 0}, 채널: {channel}")
+        logger.error(f"merge 함수에서 오류 발생: {str(e)}, 입력 이미지 수: {len(imgs) if imgs else 0}, 채널: {channel}")
         
         # 기본 빈 이미지 반환 (GUI 프로그램이 계속 동작할 수 있도록)
         if channel == 2:
