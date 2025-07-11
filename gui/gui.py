@@ -160,7 +160,7 @@ console_only_handler.setFormatter(console_only_formatter)
 console_only_logger.addHandler(console_only_handler)
 
 # 모델 로드 완료 메시지
-safe_log_to_file("YOLO 모델 로드 완료")
+safe_log_to_file("YOLO model loaded successfully")
 
 # date.get_time_millisec()[0:16]
 image_log = date.get_time_millisec()[0:16]
@@ -207,10 +207,10 @@ def difference(before, after):
 # Create a Tkinter window
 cam_on = False
 cam_count = 0
-safe_log_to_file("GUI 창 생성 중...")
+safe_log_to_file("Creating GUI window...")
 win = Tk()
 win.title("Detection Display")
-safe_log_to_file("GUI 창 생성 완료")
+safe_log_to_file("GUI window created successfully")
 
 # creating fixed geometry of the 
 # tkinter window with dimensions 1300x700
@@ -626,7 +626,7 @@ def check_start():
     global m04, m53m, m54m, s_time, count, detected, mmddhhnnss, check_status
     
     if check_status == 1:
-        safe_log_to_file("검사 시스템 시작됨")
+        safe_log_to_file("Inspection system started")
         
     if(check_status%20==0):
         start_btn_check()
@@ -659,7 +659,7 @@ def check_start():
 
     # 방금 Start 버튼이 눌렸으면
     elif not((m53m == m53) & (m54m == m54)):
-        safe_log_to_file("물리적 Start 버튼 눌림 - 검사 시작")
+        safe_log_to_file("Physical Start button pressed - Inspection started")
         count = 0
         # 면적 DB 보관할 폴더 있는지 확인 후 없으면 생성
         path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'+date.get_date_in_yyyymmdd()+'/'
@@ -689,17 +689,17 @@ def check_start():
         # mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
 
         mmddhhnnss = plc_starttime(client)
-        safe_log_to_file(f"제품 시작 시간: {mmddhhnnss}")
+        safe_log_to_file(f"Product start time: {mmddhhnnss}")
 
 
         # print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
-        safe_log_to_file("카메라 노출 시간 자동 조정 중...")
+        safe_log_to_file("Adjusting camera exposure time automatically...")
         exposure_change()
         # print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
         # mask_area_base_set()
         
         #SQL insert (시작시간)
-        safe_log_to_file("시작 시간 데이터베이스 기록 중...")
+        safe_log_to_file("Recording start time to database...")
         start_sql_thread = threading.Thread(target=write_start_sql, args=(mmddhhnnss, cable_area_base))
         start_sql_thread.start()
         # start_sql_thread.join()
@@ -781,7 +781,7 @@ def camara_img_merge():
         # 사진 3장 합치기
         # 입력 검증
         if not images or len(images) == 0:
-            logger.warning("이미지가 없습니다. 빈 이미지를 생성합니다.")
+            logger.warning("No images available. Creating empty image.")
             merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
             channel = 3
         else:
@@ -793,18 +793,18 @@ def camara_img_merge():
                 elif len(img_array.shape) == 2:
                     channel = 2
                 else:
-                    logger.warning(f"예상치 못한 이미지 차원: {img_array.shape}")
+                    logger.warning(f"Unexpected image dimension: {img_array.shape}")
                     channel = 3
                 
                 merge_img = imgmerge.merge(images, channel)
                 
                 # merge 결과 검증
                 if merge_img is None or merge_img.size == 0:
-                    logger.warning("merge 결과가 비어있습니다. 빈 이미지를 생성합니다.")
+                    logger.warning("Merge result is empty. Creating empty image.")
                     merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                     
             except Exception as e:
-                logger.error(f"이미지 merge 중 오류: {e}")
+                logger.error(f"Error during image merge: {e}")
                 merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                 channel = 3
         q.put(merge_img)
@@ -839,14 +839,14 @@ def show_camera():
                         # 카메라 실패 카운트 증가
                         if i < len(camera_fail_count):
                             camera_fail_count[i] += 1
-                        logger.warning(f"카메라 {i}번 이미지 가져오기 실패")
+                        logger.warning(f"Camera {i} failed to capture image")
 
                 except Exception as e:
                     # 카메라 실패 카운트 증가
                     if i < len(camera_fail_count):
                         camera_fail_count[i] += 1
-                    logger.error(f"카메라 {i}번 오류: {e}")
-                    error_logger.error(f"카메라 {i}번 오류: {traceback.format_exc()}")
+                    logger.error(f"Camera {i} error: {e}")
+                    error_logger.error(f"Camera {i} error: {traceback.format_exc()}")
                     continue
             
                        
@@ -856,14 +856,14 @@ def show_camera():
             successful_cameras = len(images)
             
             if not images or len(images) == 0:
-                logger.warning("모든 카메라에서 이미지를 가져올 수 없습니다. 검은색 이미지를 생성합니다.")
+                logger.warning("Cannot get images from all cameras. Creating black image.")
                 if total_attempts % 100 == 0:  # 100회마다 상태 출력
-                    logger.info(f"카메라 상태 - 성공: {camera_success_count}, 실패: {camera_fail_count}")
+                    logger.info(f"Camera status - Success: {camera_success_count}, Fail: {camera_fail_count}")
                 merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                 channel = 3
             else:
                 if successful_cameras < len(cameras):
-                    logger.info(f"카메라 {successful_cameras}개/{len(cameras)}개만 성공")
+                    logger.info(f"Camera {successful_cameras}/{len(cameras)} only succeeded")
                 
                 try:
                     # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
@@ -873,18 +873,18 @@ def show_camera():
                     elif len(img_array.shape) == 2:
                         channel = 2
                     else:
-                        logger.warning(f"예상치 못한 이미지 차원: {img_array.shape}")
+                        logger.warning(f"Unexpected image dimension: {img_array.shape}")
                         channel = 3
                     
                     merge_img = imgmerge.merge(images, channel)
                     
                     # merge 결과 검증
                     if merge_img is None or merge_img.size == 0:
-                        logger.warning("merge 결과가 비어있습니다. 검은색 이미지를 생성합니다.")
+                        logger.warning("Merge result is empty. Creating black image.")
                         merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                         
                 except Exception as e:
-                    logger.error(f"이미지 merge 중 오류: {e}")
+                    logger.error(f"Error during image merge: {e}")
                     merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                     channel = 3
 
@@ -993,7 +993,7 @@ def detect_camera():
                 # 사진 3장 합치기
                 # 입력 검증
                 if not images or len(images) == 0:
-                    logger.warning("이미지가 없습니다. 빈 이미지를 생성합니다.")
+                    logger.warning("No images available. Creating empty image.")
                     merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                     channel = 3
                 else:
@@ -1005,18 +1005,18 @@ def detect_camera():
                         elif len(img_array.shape) == 2:
                             channel = 2
                         else:
-                            logger.warning(f"예상치 못한 이미지 차원: {img_array.shape}")
+                            logger.warning(f"Unexpected image dimension: {img_array.shape}")
                             channel = 3
                         
                         merge_img = imgmerge.merge(images, channel)
                         
                         # merge 결과 검증
                         if merge_img is None or merge_img.size == 0:
-                            logger.warning("merge 결과가 비어있습니다. 빈 이미지를 생성합니다.")
+                            logger.warning("Merge result is empty. Creating empty image.")
                             merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                             
                     except Exception as e:
-                        logger.error(f"이미지 merge 중 오류: {e}")
+                        logger.error(f"Error during image merge: {e}")
                         merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                         channel = 3
                
@@ -1065,7 +1065,7 @@ def detect_camera():
                             # time2 = int(date.get_time_millisec())
 
                             count = count + 1
-                            console_only_logger.info(f"불량 검출! 신뢰도: {conf_max:.3f} (기준: {critical})")
+                            console_only_logger.info(f"Defect detected! Confidence: {conf_max:.3f} (Threshold: {critical})")
 
                             #########################
                             #### PLC connect 시작 ####
@@ -1200,7 +1200,7 @@ check_status = 1
 
 def start_cam():
     global cam_on, check_status
-    safe_log_to_file("start_cam 함수 호출됨")
+    safe_log_to_file("start_cam function called")
     start_btn_check()
     
     if cam_on == False :
@@ -1209,23 +1209,23 @@ def start_cam():
         # open_camera()
         if m53 + m54 == 1 :
             show_inference_status("검사 중")
-            safe_log_to_file("검사 모드로 변경")
+            safe_log_to_file("Changed to inspection mode")
         else :
             show_inference_status("준비 중")
-            safe_log_to_file("준비 모드로 변경")
+            safe_log_to_file("Changed to ready mode")
         check_start()
-        safe_log_to_file("카메라 시작 완료")
+        safe_log_to_file("Camera start completed")
     else:
-        safe_log_to_file("카메라가 이미 실행 중입니다")
+        safe_log_to_file("Camera is already running")
 
 def stop_cam():
     global cam_on
-    safe_log_to_file("일시정지 버튼 클릭됨 - 검사 일시정지")
+    safe_log_to_file("Pause button clicked - Inspection paused")
     # modbus.write_detected([1,0,0], client)
     # print("Sent modbus [1,0,0]")
     cam_on = False
     show_inference_status("일시정지")
-    safe_log_to_file("카메라 일시정지 완료")
+    safe_log_to_file("Camera pause completed")
 
 
 # 카메라 상태 모니터링 변수들
@@ -1273,10 +1273,10 @@ btn_open.place(x=120, y=505)
 
 
 # Auto start
-safe_log_to_file("프로그램이 시작되었습니다.")
-safe_log_to_file("카메라 초기화 중...")
+safe_log_to_file("Program has started.")
+safe_log_to_file("Initializing cameras...")
 start_cam()
-safe_log_to_file("카메라 초기화 완료. GUI 시작.")
+safe_log_to_file("Camera initialization completed. Starting GUI.")
 # Create an infinite loop for displaying app on screen 
 win.mainloop() 
 
@@ -1284,10 +1284,10 @@ win.mainloop()
 try: 
     # cap.release()
     # cv2.destroyAllWindows()
-    safe_log_to_file("프로그램이 종료되었습니다.")
+    safe_log_to_file("Program has been terminated.")
     print("Camera is released")
 except Exception as e:
-    logger.error(f"카메라 해제 중 오류: {e}")
+    logger.error(f"Error during camera release: {e}")
     print(f"Error opening webcam: {e}")
     traceback.print_exc(file=sys.stdout)
 finally:
