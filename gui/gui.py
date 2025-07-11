@@ -13,7 +13,23 @@ from PIL import Image, ImageTk
 import traceback
 import os
 import sys
+import locale
 sys.path.append('C:/source')
+
+# 로케일 설정 (한글 지원)
+try:
+    locale.setlocale(locale.LC_ALL, 'ko_KR.UTF-8')
+except locale.Error:
+    try:
+        locale.setlocale(locale.LC_ALL, 'Korean_Korea.UTF-8')
+    except locale.Error:
+        pass  # 시스템이 지원하지 않는 경우 무시
+
+# Windows 환경에서 한글 출력 설정
+if os.name == 'nt':  # Windows
+    import codecs
+    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
 import util.format_date_time as date
 import util.merge as imgmerge
 import SQL.insert_sqllite_start_3 as start
@@ -101,7 +117,7 @@ logger.setLevel(logging.INFO)
 logger.propagate = False
 
 # 파일 핸들러 (모든 로그)
-file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+file_handler = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8-sig')
 file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(file_formatter)
 
@@ -122,7 +138,7 @@ logger.info("YOLO 모델 로드 완료")
 error_logger = logging.getLogger('error_logger')
 error_logger.setLevel(logging.ERROR)
 error_logger.propagate = False
-error_file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+error_file_handler = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8-sig')
 error_file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 error_file_handler.setFormatter(error_file_formatter)
 error_logger.addHandler(error_file_handler)
