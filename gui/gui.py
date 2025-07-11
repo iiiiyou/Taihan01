@@ -82,6 +82,7 @@ def makedirs(path):
             os.makedirs(path)
     except OSError:
         logging.error(traceback.format_exc())
+        logger.error("Error: Failed to create the directory.")
         print("Error: Failed to create the directory.")
 # Make folder end #
 
@@ -89,6 +90,20 @@ def makedirs(path):
 LOG_DIR = os.path.join('C:/source', 'log')
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, f"app_{date.get_date_in_yyyymmdd()}.log")
+
+# 로거 설정
+logger = logging.getLogger('gui_logger')
+logger.setLevel(logging.INFO)
+
+# 파일 핸들러 (모든 로그)
+file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+file_handler.setFormatter(file_formatter)
+
+# 핸들러 추가
+logger.addHandler(file_handler)
+
+# 기존 로깅 설정도 유지 (ERROR 레벨용)
 logging.basicConfig(
     filename=LOG_FILE,
     level=logging.ERROR,
@@ -706,7 +721,7 @@ def camara_img_merge():
         # 사진 3장 합치기
         # 입력 검증
         if not images or len(images) == 0:
-            print("이미지가 없습니다. 빈 이미지를 생성합니다.")
+            logger.warning("이미지가 없습니다. 빈 이미지를 생성합니다.")
             merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
             channel = 3
         else:
@@ -718,18 +733,18 @@ def camara_img_merge():
                 elif len(img_array.shape) == 2:
                     channel = 2
                 else:
-                    print(f"예상치 못한 이미지 차원: {img_array.shape}")
+                    logger.warning(f"예상치 못한 이미지 차원: {img_array.shape}")
                     channel = 3
                 
                 merge_img = imgmerge.merge(images, channel)
                 
                 # merge 결과 검증
                 if merge_img is None or merge_img.size == 0:
-                    print("merge 결과가 비어있습니다. 빈 이미지를 생성합니다.")
+                    logger.warning("merge 결과가 비어있습니다. 빈 이미지를 생성합니다.")
                     merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                     
             except Exception as e:
-                print(f"이미지 merge 중 오류: {e}")
+                logger.error(f"이미지 merge 중 오류: {e}")
                 merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                 channel = 3
         q.put(merge_img)
@@ -753,25 +768,43 @@ def show_camera():
                 try: 
                     # print(i, '번째 카메라 Grap 결과: ', grabResults[i].GrabSucceeded())
                     if grabResults[i].GrabSucceeded():
-
                         images.append(converter.Convert(grabResults[i]))
                         images[i] = images[i].GetArray()
                         images[i] = cv2.resize(images[i], (imgsize,imgsize))
+                        
+                        # 카메라 성공 카운트 증가
+                        if i < len(camera_success_count):
+                            camera_success_count[i] += 1
+                    else:
+                        # 카메라 실패 카운트 증가
+                        if i < len(camera_fail_count):
+                            camera_fail_count[i] += 1
+                        logger.warning(f"카메라 {i}번 이미지 가져오기 실패")
 
                 except Exception as e:
-                    # print(f"===========ERROR==========: {e}")
-                    # traceback.print_exc(file=sys.stdout)
-                    logging.error(traceback.format_exc())
+                    # 카메라 실패 카운트 증가
+                    if i < len(camera_fail_count):
+                        camera_fail_count[i] += 1
+                    logger.error(f"카메라 {i}번 오류: {e}")
+                    logging.error(f"카메라 {i}번 오류: {traceback.format_exc()}")
                     continue
             
                        
             # 사진 3장 합치기
-            # 입력 검증
+            # 입력 검증 및 카메라 상태 로그
+            total_attempts += 1
+            successful_cameras = len(images)
+            
             if not images or len(images) == 0:
-                print("이미지가 없습니다. 빈 이미지를 생성합니다.")
+                logger.warning("모든 카메라에서 이미지를 가져올 수 없습니다. 검은색 이미지를 생성합니다.")
+                if total_attempts % 100 == 0:  # 100회마다 상태 출력
+                    logger.info(f"카메라 상태 - 성공: {camera_success_count}, 실패: {camera_fail_count}")
                 merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                 channel = 3
             else:
+                if successful_cameras < len(cameras):
+                    logger.info(f"카메라 {successful_cameras}개/{len(cameras)}개만 성공")
+                
                 try:
                     # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
                     img_array = np.asarray(images[0])
@@ -780,18 +813,18 @@ def show_camera():
                     elif len(img_array.shape) == 2:
                         channel = 2
                     else:
-                        print(f"예상치 못한 이미지 차원: {img_array.shape}")
+                        logger.warning(f"예상치 못한 이미지 차원: {img_array.shape}")
                         channel = 3
                     
                     merge_img = imgmerge.merge(images, channel)
                     
                     # merge 결과 검증
                     if merge_img is None or merge_img.size == 0:
-                        print("merge 결과가 비어있습니다. 빈 이미지를 생성합니다.")
+                        logger.warning("merge 결과가 비어있습니다. 검은색 이미지를 생성합니다.")
                         merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                         
                 except Exception as e:
-                    print(f"이미지 merge 중 오류: {e}")
+                    logger.error(f"이미지 merge 중 오류: {e}")
                     merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                     channel = 3
 
@@ -900,7 +933,7 @@ def detect_camera():
                 # 사진 3장 합치기
                 # 입력 검증
                 if not images or len(images) == 0:
-                    print("이미지가 없습니다. 빈 이미지를 생성합니다.")
+                    logger.warning("이미지가 없습니다. 빈 이미지를 생성합니다.")
                     merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                     channel = 3
                 else:
@@ -912,18 +945,18 @@ def detect_camera():
                         elif len(img_array.shape) == 2:
                             channel = 2
                         else:
-                            print(f"예상치 못한 이미지 차원: {img_array.shape}")
+                            logger.warning(f"예상치 못한 이미지 차원: {img_array.shape}")
                             channel = 3
                         
                         merge_img = imgmerge.merge(images, channel)
                         
                         # merge 결과 검증
                         if merge_img is None or merge_img.size == 0:
-                            print("merge 결과가 비어있습니다. 빈 이미지를 생성합니다.")
+                            logger.warning("merge 결과가 비어있습니다. 빈 이미지를 생성합니다.")
                             merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                             
                     except Exception as e:
-                        print(f"이미지 merge 중 오류: {e}")
+                        logger.error(f"이미지 merge 중 오류: {e}")
                         merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                         channel = 3
                
@@ -1085,12 +1118,12 @@ def detect_camera():
                 ######  tkinter  end   ######
                         
             except AttributeError as e:
-                print(f"===========ERROR==========76: {e}")
+                logger.error(f"AttributeError: {e}")
                 # traceback.print_exc(file=sys.stdout)
                 logging.error(traceback.format_exc())
                 pass
             except Exception as e:
-                print(f"===========ERROR==========763: {e}")
+                logger.error(f"Exception: {e}")
                 # traceback.print_exc(file=sys.stdout)
                 logging.error(traceback.format_exc())
                 pass
@@ -1124,6 +1157,11 @@ def stop_cam():
     cam_on = False
     show_inference_status("일시정지")
 
+
+# 카메라 상태 모니터링 변수들
+camera_success_count = [0, 0, 0]  # 각 카메라별 성공 횟수
+camera_fail_count = [0, 0, 0]     # 각 카메라별 실패 횟수
+total_attempts = 0                # 총 시도 횟수
 
 ######  tkinter  start   ######
 
