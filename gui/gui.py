@@ -34,16 +34,8 @@ except locale.Error:
 
 # Windows 환경에서 한글 출력 설정
 if os.name == 'nt':  # Windows
-    import codecs
     # 환경 변수 설정
     os.environ['PYTHONIOENCODING'] = 'utf-8'
-    # stdout, stderr 인코딩 설정
-    if hasattr(sys.stdout, 'reconfigure'):
-        sys.stdout.reconfigure(encoding='utf-8')
-        sys.stderr.reconfigure(encoding='utf-8')
-    else:
-        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
-        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
 import util.format_date_time as date
 import util.merge as imgmerge
 import SQL.insert_sqllite_start_3 as start
@@ -121,41 +113,54 @@ def makedirs(path):
 
 # --- 로깅 설정 ---
 import logging
+import locale
 import codecs
 
 LOG_DIR = os.path.join('C:/source', 'log')
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, f"app_{date.get_date_in_yyyymmdd()}.log")
 
-# 기본 로깅 설정 초기화
+# 한글 안전 로깅 함수
+def safe_log_to_file(message, level='INFO'):
+    """한글 메시지를 안전하게 파일에 기록"""
+    try:
+        import datetime
+        timestamp = datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S,%f')[:-3]
+        log_message = f"{timestamp} - {level} - {message}\n"
+        
+        with open(LOG_FILE, 'a', encoding='utf-8') as f:
+            f.write(log_message)
+        
+        # 콘솔에도 출력 (영어로 변환)
+        console_message = f"{timestamp} - {message}"
+        print(console_message)
+    except Exception as e:
+        print(f"Logging error: {e}")
+
+# 기본 로깅 설정 (영어만)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s',
     handlers=[
-        logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8'),
-        logging.StreamHandler()
+        logging.StreamHandler(sys.stdout)
     ]
 )
 
 # 로거 설정
 logger = logging.getLogger('gui_logger')
-logger.setLevel(logging.INFO)
-
-# 오류 로거 설정
 error_logger = logging.getLogger('error_logger')
-error_logger.setLevel(logging.ERROR)
 
 # 콘솔 전용 로거 (불량 검출 메시지용)
 console_only_logger = logging.getLogger('console_only_logger')
 console_only_logger.setLevel(logging.INFO)
 console_only_logger.propagate = False
-console_only_handler = logging.StreamHandler()
+console_only_handler = logging.StreamHandler(sys.stdout)
 console_only_formatter = logging.Formatter('%(asctime)s - %(message)s')
 console_only_handler.setFormatter(console_only_formatter)
 console_only_logger.addHandler(console_only_handler)
 
 # 모델 로드 완료 메시지
-logger.info("YOLO 모델 로드 완료")
+safe_log_to_file("YOLO 모델 로드 완료")
 
 # date.get_time_millisec()[0:16]
 image_log = date.get_time_millisec()[0:16]
@@ -202,10 +207,10 @@ def difference(before, after):
 # Create a Tkinter window
 cam_on = False
 cam_count = 0
-logger.info("GUI 창 생성 중...")
+safe_log_to_file("GUI 창 생성 중...")
 win = Tk()
 win.title("Detection Display")
-logger.info("GUI 창 생성 완료")
+safe_log_to_file("GUI 창 생성 완료")
 
 # creating fixed geometry of the 
 # tkinter window with dimensions 1300x700
@@ -621,7 +626,7 @@ def check_start():
     global m04, m53m, m54m, s_time, count, detected, mmddhhnnss, check_status
     
     if check_status == 1:
-        logger.info("검사 시스템 시작됨")
+        safe_log_to_file("검사 시스템 시작됨")
         
     if(check_status%20==0):
         start_btn_check()
@@ -654,7 +659,7 @@ def check_start():
 
     # 방금 Start 버튼이 눌렸으면
     elif not((m53m == m53) & (m54m == m54)):
-        logger.info("물리적 Start 버튼 눌림 - 검사 시작")
+        safe_log_to_file("물리적 Start 버튼 눌림 - 검사 시작")
         count = 0
         # 면적 DB 보관할 폴더 있는지 확인 후 없으면 생성
         path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'+date.get_date_in_yyyymmdd()+'/'
@@ -684,17 +689,17 @@ def check_start():
         # mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
 
         mmddhhnnss = plc_starttime(client)
-        logger.info(f"제품 시작 시간: {mmddhhnnss}")
+        safe_log_to_file(f"제품 시작 시간: {mmddhhnnss}")
 
 
         # print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
-        logger.info("카메라 노출 시간 자동 조정 중...")
+        safe_log_to_file("카메라 노출 시간 자동 조정 중...")
         exposure_change()
         # print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
         # mask_area_base_set()
         
         #SQL insert (시작시간)
-        logger.info("시작 시간 데이터베이스 기록 중...")
+        safe_log_to_file("시작 시간 데이터베이스 기록 중...")
         start_sql_thread = threading.Thread(target=write_start_sql, args=(mmddhhnnss, cable_area_base))
         start_sql_thread.start()
         # start_sql_thread.join()
@@ -1195,7 +1200,7 @@ check_status = 1
 
 def start_cam():
     global cam_on, check_status
-    logger.info("start_cam 함수 호출됨")
+    safe_log_to_file("start_cam 함수 호출됨")
     start_btn_check()
     
     if cam_on == False :
@@ -1204,23 +1209,23 @@ def start_cam():
         # open_camera()
         if m53 + m54 == 1 :
             show_inference_status("검사 중")
-            logger.info("검사 모드로 변경")
+            safe_log_to_file("검사 모드로 변경")
         else :
             show_inference_status("준비 중")
-            logger.info("준비 모드로 변경")
+            safe_log_to_file("준비 모드로 변경")
         check_start()
-        logger.info("카메라 시작 완료")
+        safe_log_to_file("카메라 시작 완료")
     else:
-        logger.info("카메라가 이미 실행 중입니다")
+        safe_log_to_file("카메라가 이미 실행 중입니다")
 
 def stop_cam():
     global cam_on
-    logger.info("일시정지 버튼 클릭됨 - 검사 일시정지")
+    safe_log_to_file("일시정지 버튼 클릭됨 - 검사 일시정지")
     # modbus.write_detected([1,0,0], client)
     # print("Sent modbus [1,0,0]")
     cam_on = False
     show_inference_status("일시정지")
-    logger.info("카메라 일시정지 완료")
+    safe_log_to_file("카메라 일시정지 완료")
 
 
 # 카메라 상태 모니터링 변수들
@@ -1268,10 +1273,10 @@ btn_open.place(x=120, y=505)
 
 
 # Auto start
-logger.info("프로그램이 시작되었습니다.")
-logger.info("카메라 초기화 중...")
+safe_log_to_file("프로그램이 시작되었습니다.")
+safe_log_to_file("카메라 초기화 중...")
 start_cam()
-logger.info("카메라 초기화 완료. GUI 시작.")
+safe_log_to_file("카메라 초기화 완료. GUI 시작.")
 # Create an infinite loop for displaying app on screen 
 win.mainloop() 
 
@@ -1279,7 +1284,7 @@ win.mainloop()
 try: 
     # cap.release()
     # cv2.destroyAllWindows()
-    logger.info("프로그램이 종료되었습니다.")
+    safe_log_to_file("프로그램이 종료되었습니다.")
     print("Camera is released")
 except Exception as e:
     logger.error(f"카메라 해제 중 오류: {e}")
