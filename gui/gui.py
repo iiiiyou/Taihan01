@@ -704,23 +704,34 @@ def camara_img_merge():
                 pass
                     
         # 사진 3장 합치기
-
-
-        # ...existing code...
-        try:
-            # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
-            import numpy as np
-            img_array = np.asarray(images[0])
-            channel = 3 if len(img_array.shape) == 3 else 2  # 채널 확인
-        except AttributeError as e:
-            print(f"Error: {e}")
-            channel = None  # 또는 기본값 설정
-        except Exception as e:
-            print(f"Unexpected error: {e}")
-            channel = None
-        # ...existing code...
-
-        merge_img = imgmerge.merge(images, channel) # 합치기
+        # 입력 검증
+        if not images or len(images) == 0:
+            print("이미지가 없습니다. 빈 이미지를 생성합니다.")
+            merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
+            channel = 3
+        else:
+            try:
+                # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
+                img_array = np.asarray(images[0])
+                if len(img_array.shape) == 3:
+                    channel = 3
+                elif len(img_array.shape) == 2:
+                    channel = 2
+                else:
+                    print(f"예상치 못한 이미지 차원: {img_array.shape}")
+                    channel = 3
+                
+                merge_img = imgmerge.merge(images, channel)
+                
+                # merge 결과 검증
+                if merge_img is None or merge_img.size == 0:
+                    print("merge 결과가 비어있습니다. 빈 이미지를 생성합니다.")
+                    merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
+                    
+            except Exception as e:
+                print(f"이미지 merge 중 오류: {e}")
+                merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
+                channel = 3
         q.put(merge_img)
         
     except Exception as e:
@@ -755,23 +766,34 @@ def show_camera():
             
                        
             # 사진 3장 합치기
-
-            # ...existing code...
-            try:
-                # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
-                import numpy as np
-                img_array = np.asarray(images[0])
-                channel = 3 if len(img_array.shape) == 3 else 2  # 채널 확인
-            except AttributeError as e:
-                print(f"Error: {e}")
-                channel = None  # 또는 기본값 설정
-            except Exception as e:
-                print(f"Unexpected error: {e}")
-                channel = None
-            # ...existing code...
-
-
-            merge_img = imgmerge.merge(images, channel) # 합치기
+            # 입력 검증
+            if not images or len(images) == 0:
+                print("이미지가 없습니다. 빈 이미지를 생성합니다.")
+                merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
+                channel = 3
+            else:
+                try:
+                    # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
+                    img_array = np.asarray(images[0])
+                    if len(img_array.shape) == 3:
+                        channel = 3
+                    elif len(img_array.shape) == 2:
+                        channel = 2
+                    else:
+                        print(f"예상치 못한 이미지 차원: {img_array.shape}")
+                        channel = 3
+                    
+                    merge_img = imgmerge.merge(images, channel)
+                    
+                    # merge 결과 검증
+                    if merge_img is None or merge_img.size == 0:
+                        print("merge 결과가 비어있습니다. 빈 이미지를 생성합니다.")
+                        merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
+                        
+                except Exception as e:
+                    print(f"이미지 merge 중 오류: {e}")
+                    merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
+                    channel = 3
 
             # camara threading
             # merge_start = threading.Thread(target=camara_img_merge,args=())
@@ -876,22 +898,34 @@ def detect_camera():
 
             try:
                 # 사진 3장 합치기
-
-                # ...existing code...
-                try:
-                    # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
-                    import numpy as np
-                    img_array = np.asarray(images[0])
-                    channel = 3 if len(img_array.shape) == 3 else 2  # 채널 확인
-                except AttributeError as e:
-                    print(f"Error: {e}")
-                    channel = None  # 또는 기본값 설정
-                except Exception as e:
-                    print(f"Unexpected error: {e}")
-                    channel = None
-                # ...existing code...
-
-                merge_img = imgmerge.merge(images, channel) # 합치기
+                # 입력 검증
+                if not images or len(images) == 0:
+                    print("이미지가 없습니다. 빈 이미지를 생성합니다.")
+                    merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
+                    channel = 3
+                else:
+                    try:
+                        # PylonImage를 numpy array로 변환해야 shape 속성을 사용할 수 있습니다.
+                        img_array = np.asarray(images[0])
+                        if len(img_array.shape) == 3:
+                            channel = 3
+                        elif len(img_array.shape) == 2:
+                            channel = 2
+                        else:
+                            print(f"예상치 못한 이미지 차원: {img_array.shape}")
+                            channel = 3
+                        
+                        merge_img = imgmerge.merge(images, channel)
+                        
+                        # merge 결과 검증
+                        if merge_img is None or merge_img.size == 0:
+                            print("merge 결과가 비어있습니다. 빈 이미지를 생성합니다.")
+                            merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
+                            
+                    except Exception as e:
+                        print(f"이미지 merge 중 오류: {e}")
+                        merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
+                        channel = 3
                
 
                 # show_inference_status("검사 중")

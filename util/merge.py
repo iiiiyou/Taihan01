@@ -43,7 +43,23 @@ fileapth = "C:/source/util/"
 
 def merge(imgs, channel):
     try:
+        # 입력 검증
+        if not imgs or len(imgs) == 0:
+            logger.error("입력 이미지가 없습니다")
+            if channel == 2:
+                return np.zeros((213, 640), dtype=np.uint8)
+            elif channel == 3:
+                return np.zeros((213, 640, 3), dtype=np.uint8)
+            else:
+                return np.zeros((213, 640), dtype=np.uint8)
+        
+        if channel is None:
+            logger.error("채널 정보가 없습니다")
+            return np.zeros((213, 640, 3), dtype=np.uint8)
+        
         images = []
+        stacked_image = None  # 초기값 설정
+        
         if channel == 2:    # 2차원 ndarray 로 진행할 경우
             for file in imgs:
                 # img = cv2.imread(file, cv2.IMREAD_GRAYSCALE) # 이미지 파일을 2차원 흑백이미지로 가져오기
@@ -81,12 +97,29 @@ def merge(imgs, channel):
 
             # Stack the images vertically
             stacked_image = np.concatenate(images, axis=0)
+        
+        else:
+            logger.error(f"지원하지 않는 채널입니다: {channel}")
+            return np.zeros((213, 640, 3), dtype=np.uint8)
+
+        # 최종 검증
+        if stacked_image is None:
+            logger.error("이미지 처리 중 오류가 발생했습니다")
+            if channel == 2:
+                return np.zeros((213, 640), dtype=np.uint8)
+            else:
+                return np.zeros((213, 640, 3), dtype=np.uint8)
 
         # plt.imshow(stacked_image, cmap='gray')
-        stacked_image.shape
+        # stacked_image.shape
 
         # Save the stacked image
-        # cv2.imwrite(fileapth+"stacked_image_"+str(channel)+"_"+date.get_time_millisec()+".jpg", stacked_image)        # img = cv2.imread(fileapth+'stacked_image.jpg',0)
+        # cv2.imwrite(fileapth+"stacked_image_"+str(channel)+"_"+date.get_time_millisec()+".jpg", stacked_image)
+
+        # img = cv2.imread(fileapth+'stacked_image.jpg',0)
+        # plt.imshow(img, cmap='gray')
+        # height, width = img.shape
+        return stacked_image        # img = cv2.imread(fileapth+'stacked_image.jpg',0)
         # plt.imshow(img, cmap='gray')
         # height, width = img.shape
         return stacked_image
