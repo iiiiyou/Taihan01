@@ -2,7 +2,16 @@
 # camera in Tkinter 
 # Import the libraries, 
 # tkinter, cv2, Image and ImageTk 
-  
+
+# -*- coding: utf-8 -*-
+import sys
+import os
+
+# 전역 인코딩 설정
+if sys.platform.startswith('win'):
+    # Windows 환경에서 콘솔 인코딩 설정
+    os.system('chcp 65001')  # UTF-8 코드페이지 설정
+    
 from tkinter import *
 import tkinter as tk 
 from pypylon import pylon
@@ -11,8 +20,6 @@ import cv2
 import numpy as np
 from PIL import Image, ImageTk 
 import traceback
-import os
-import sys
 import locale
 sys.path.append('C:/source')
 
@@ -28,8 +35,15 @@ except locale.Error:
 # Windows 환경에서 한글 출력 설정
 if os.name == 'nt':  # Windows
     import codecs
-    sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
-    sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
+    # 환경 변수 설정
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    # stdout, stderr 인코딩 설정
+    if hasattr(sys.stdout, 'reconfigure'):
+        sys.stdout.reconfigure(encoding='utf-8')
+        sys.stderr.reconfigure(encoding='utf-8')
+    else:
+        sys.stdout = codecs.getwriter('utf-8')(sys.stdout.detach())
+        sys.stderr = codecs.getwriter('utf-8')(sys.stderr.detach())
 import util.format_date_time as date
 import util.merge as imgmerge
 import SQL.insert_sqllite_start_3 as start
@@ -106,42 +120,30 @@ def makedirs(path):
 # Make folder end #
 
 # --- 로깅 설정 ---
+import logging
+import codecs
+
 LOG_DIR = os.path.join('C:/source', 'log')
 os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, f"app_{date.get_date_in_yyyymmdd()}.log")
 
+# 기본 로깅 설정 초기화
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[
+        logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8'),
+        logging.StreamHandler()
+    ]
+)
+
 # 로거 설정
 logger = logging.getLogger('gui_logger')
 logger.setLevel(logging.INFO)
-# 부모 로거로의 전파 방지 (중복 출력 방지)
-logger.propagate = False
 
-# 파일 핸들러 (모든 로그)
-file_handler = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8-sig')
-file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-file_handler.setFormatter(file_formatter)
-
-# 콘솔 핸들러 (INFO 레벨 상태 메시지)
-console_handler = logging.StreamHandler()
-console_handler.setLevel(logging.INFO)
-console_formatter = logging.Formatter('%(asctime)s - %(message)s')
-console_handler.setFormatter(console_formatter)
-
-# 핸들러 추가
-logger.addHandler(file_handler)
-logger.addHandler(console_handler)
-
-# 모델 로드 완료 메시지
-logger.info("YOLO 모델 로드 완료")
-
-# 기존 로깅 설정 (ERROR 레벨용, 별도 로거 사용)
+# 오류 로거 설정
 error_logger = logging.getLogger('error_logger')
 error_logger.setLevel(logging.ERROR)
-error_logger.propagate = False
-error_file_handler = logging.FileHandler(LOG_FILE, mode='a', encoding='utf-8-sig')
-error_file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
-error_file_handler.setFormatter(error_file_formatter)
-error_logger.addHandler(error_file_handler)
 
 # 콘솔 전용 로거 (불량 검출 메시지용)
 console_only_logger = logging.getLogger('console_only_logger')
@@ -151,6 +153,9 @@ console_only_handler = logging.StreamHandler()
 console_only_formatter = logging.Formatter('%(asctime)s - %(message)s')
 console_only_handler.setFormatter(console_only_formatter)
 console_only_logger.addHandler(console_only_handler)
+
+# 모델 로드 완료 메시지
+logger.info("YOLO 모델 로드 완료")
 
 # date.get_time_millisec()[0:16]
 image_log = date.get_time_millisec()[0:16]
