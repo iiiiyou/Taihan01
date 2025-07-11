@@ -1194,10 +1194,12 @@ def start_cam():
 
 def stop_cam():
     global cam_on
+    logger.info("일시정지 버튼 클릭됨 - 검사 일시정지")
     # modbus.write_detected([1,0,0], client)
     # print("Sent modbus [1,0,0]")
     cam_on = False
     show_inference_status("일시정지")
+    logger.info("카메라 일시정지 완료")
 
 
 # 카메라 상태 모니터링 변수들
