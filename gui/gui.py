@@ -84,7 +84,7 @@ def makedirs(path):
         if not os.path.exists(path):
             os.makedirs(path)
     except OSError:
-        logging.error(traceback.format_exc())
+        error_logger.error(traceback.format_exc())
         logger.error("Error: Failed to create the directory.")
         print("Error: Failed to create the directory.")
 # Make folder end #
@@ -97,6 +97,8 @@ LOG_FILE = os.path.join(LOG_DIR, f"app_{date.get_date_in_yyyymmdd()}.log")
 # 로거 설정
 logger = logging.getLogger('gui_logger')
 logger.setLevel(logging.INFO)
+# 부모 로거로의 전파 방지 (중복 출력 방지)
+logger.propagate = False
 
 # 파일 핸들러 (모든 로그)
 file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
@@ -116,12 +118,23 @@ logger.addHandler(console_handler)
 # 모델 로드 완료 메시지
 logger.info("YOLO 모델 로드 완료")
 
-# 기존 로깅 설정도 유지 (ERROR 레벨용)
-logging.basicConfig(
-    filename=LOG_FILE,
-    level=logging.ERROR,
-    format='%(asctime)s - %(levelname)s - %(message)s'
-)
+# 기존 로깅 설정 (ERROR 레벨용, 별도 로거 사용)
+error_logger = logging.getLogger('error_logger')
+error_logger.setLevel(logging.ERROR)
+error_logger.propagate = False
+error_file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
+error_file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
+error_file_handler.setFormatter(error_file_formatter)
+error_logger.addHandler(error_file_handler)
+
+# 콘솔 전용 로거 (불량 검출 메시지용)
+console_only_logger = logging.getLogger('console_only_logger')
+console_only_logger.setLevel(logging.INFO)
+console_only_logger.propagate = False
+console_only_handler = logging.StreamHandler()
+console_only_formatter = logging.Formatter('%(asctime)s - %(message)s')
+console_only_handler.setFormatter(console_only_formatter)
+console_only_logger.addHandler(console_only_handler)
 
 # date.get_time_millisec()[0:16]
 image_log = date.get_time_millisec()[0:16]
@@ -414,7 +427,7 @@ def plc_status(client):
         m04 = result_m04.bits[0]
         return m01, m04, m53, m54
     except:
-        logging.error(traceback.format_exc())
+        error_logger.error(traceback.format_exc())
         pass
 
 # PLC readcoil starttime
@@ -444,7 +457,7 @@ def plc_starttime(client):
         return mmddhhnnss
     
     except:
-        logging.error(traceback.format_exc())
+        error_logger.error(traceback.format_exc())
         pass
 
 
@@ -480,7 +493,7 @@ def plc_getserial(client):
     except Exception as e:
         # print(f"===========ERROR==========: {e}")
         # traceback.print_exc(file=sys.stdout)
-        logging.error(traceback.format_exc())
+        error_logger.error(traceback.format_exc())
         pass
 
 def start_btn_check():
@@ -502,7 +515,7 @@ def start_btn_check():
         m01 = result_m01.bits[0]
         m04 = result_m04.bits[0]
     except:
-        logging.error(traceback.format_exc())
+        error_logger.error(traceback.format_exc())
         pass
     show_m01_value(m01)
     show_m53_value(m53)
@@ -569,9 +582,9 @@ detected = []
 # 이전과 현재가 바뀌었나 확인
 def is_detected(x):
     if (x in detected):
-        file_path = "C:/source/log/"+str(date.get_date_in_yyyymmdd())+"_detected.txt"
+        # file_path = "C:/source/log/"+str(date.get_date_in_yyyymmdd())+"_detected.txt"
         # duplicated = str(date.get_date_time()) + ": " + str(x) + ", "
-        duplicated = str(x) + ", "
+        # duplicated = str(x) + ", "
         # with open(file_path, "a") as file:
         #     # file.write(duplicated + "\n")
         #     file.write(duplicated)
@@ -675,11 +688,11 @@ def check_start():
         global image_log
         image_log = date.get_time_millisec()[0:16]
         
-        file_path = "C:/source/log/"+str(date.get_date_in_yyyymmdd())+"_detected.txt"
-        x = sorted(detected)
-        txt_detected = str(date.get_date_time()) + ": " + str(len(detected)) + ": " + str(x)
-        with open(file_path, "a") as file:
-            file.write("\n" + txt_detected + "\n")
+        # file_path = "C:/source/log/"+str(date.get_date_in_yyyymmdd())+"_detected.txt"
+        # x = sorted(detected)
+        # txt_detected = str(date.get_date_time()) + ": " + str(len(detected)) + ": " + str(x)
+        # with open(file_path, "a") as file:
+        #     file.write("\n" + txt_detected + "\n")
 
         detected = []
         m53m, m54m = m53, m54
@@ -736,7 +749,7 @@ def camara_img_merge():
             except Exception as e:
                 # print(f"===========ERROR==========: {e}")
                 # traceback.print_exc(file=sys.stdout)
-                logging.error(traceback.format_exc())
+                error_logger.error(traceback.format_exc())
                 pass
                     
         # 사진 3장 합치기
@@ -773,7 +786,7 @@ def camara_img_merge():
     except Exception as e:
         # print(f"===========ERROR==========: {e}")
         # traceback.print_exc(file=sys.stdout)
-        logging.error(traceback.format_exc())
+        error_logger.error(traceback.format_exc())
         pass
 
 
@@ -807,7 +820,7 @@ def show_camera():
                     if i < len(camera_fail_count):
                         camera_fail_count[i] += 1
                     logger.error(f"카메라 {i}번 오류: {e}")
-                    logging.error(f"카메라 {i}번 오류: {traceback.format_exc()}")
+                    error_logger.error(f"카메라 {i}번 오류: {traceback.format_exc()}")
                     continue
             
                        
@@ -874,7 +887,7 @@ def show_camera():
         except Exception as e:
             # print(f"===========ERROR==========: {e}")
             # traceback.print_exc(file=sys.stdout)
-            logging.error(traceback.format_exc())
+            error_logger.error(traceback.format_exc())
             pass
             win.destroy()
             # pass
@@ -1026,7 +1039,7 @@ def detect_camera():
                             # time2 = int(date.get_time_millisec())
 
                             count = count + 1
-                            logger.info(f"불량 검출! 신뢰도: {conf_max:.3f} (기준: {critical})")
+                            console_only_logger.info(f"불량 검출! 신뢰도: {conf_max:.3f} (기준: {critical})")
 
                             #########################
                             #### PLC connect 시작 ####
@@ -1089,7 +1102,7 @@ def detect_camera():
                             # cv2.imwrite('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img)
                             # # image save - no thread - end #
 
-                            camera_frame_log(detected_time, "c", round(conf_max.item(), 3))
+                            # camera_frame_log(detected_time, "c", round(conf_max.item(), 3))
                         else:
                             
                             # image save - thread - start #
@@ -1109,9 +1122,10 @@ def detect_camera():
                             # # image save - no thread - end #
 
 
-                            camera_frame_log(detected_time, "n", round(conf_max.item(), 3))
+                            # camera_frame_log(detected_time, "n", round(conf_max.item(), 3))
                 else:
-                    camera_frame_log(detected_time, "x", "0")
+                    # camera_frame_log(detected_time, "x", "0")
+                    pass
 
                 # 이번 루프 시작 시간 기록!
                 current_loop_start_time = time.time()
@@ -1142,17 +1156,17 @@ def detect_camera():
             except AttributeError as e:
                 logger.error(f"AttributeError: {e}")
                 # traceback.print_exc(file=sys.stdout)
-                logging.error(traceback.format_exc())
+                error_logger.error(traceback.format_exc())
                 pass
             except Exception as e:
                 logger.error(f"Exception: {e}")
                 # traceback.print_exc(file=sys.stdout)
-                logging.error(traceback.format_exc())
+                error_logger.error(traceback.format_exc())
                 pass
         except Exception as e:
             # print(f"===========ERROR==========: {e}")
             # traceback.print_exc(file=sys.stdout)
-            logging.error(traceback.format_exc())
+            error_logger.error(traceback.format_exc())
             pass
             # win.destroy()
 
