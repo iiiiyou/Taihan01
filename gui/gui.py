@@ -26,10 +26,13 @@ import logging
 import threading
 import queue
 
+# YOLO 로깅 비활성화
+logging.getLogger('ultralytics').setLevel(logging.WARNING)
+
 
 # Load the YOLOv8 model#
 # model = YOLO('C:/source/models/taihanfiber_15-4_20250511_yolov8s-seg_best.pt') # pruning 적용
-model = YOLO('C:/source/models/taihanfiber_17-1_20250603_yolo11s-seg_best.pt') # pruning 적용
+model = YOLO('C:/source/models/taihanfiber_17-1_20250603_yolo11s-seg_best.pt', verbose=False) # pruning 적용
 imgsize = 640
 confidence = 0.5
 reset_confidence = confidence
@@ -100,8 +103,18 @@ file_handler = logging.FileHandler(LOG_FILE, encoding='utf-8')
 file_formatter = logging.Formatter('%(asctime)s - %(levelname)s - %(message)s')
 file_handler.setFormatter(file_formatter)
 
+# 콘솔 핸들러 (INFO 레벨 상태 메시지)
+console_handler = logging.StreamHandler()
+console_handler.setLevel(logging.INFO)
+console_formatter = logging.Formatter('%(asctime)s - %(message)s')
+console_handler.setFormatter(console_formatter)
+
 # 핸들러 추가
 logger.addHandler(file_handler)
+logger.addHandler(console_handler)
+
+# 모델 로드 완료 메시지
+logger.info("YOLO 모델 로드 완료")
 
 # 기존 로깅 설정도 유지 (ERROR 레벨용)
 logging.basicConfig(
@@ -155,8 +168,10 @@ def difference(before, after):
 # Create a Tkinter window
 cam_on = False
 cam_count = 0
+logger.info("GUI 창 생성 중...")
 win = Tk()
 win.title("Detection Display")
+logger.info("GUI 창 생성 완료")
 
 # creating fixed geometry of the 
 # tkinter window with dimensions 1300x700
@@ -570,6 +585,9 @@ def is_detected(x):
 ######  Start button status check start   ######
 def check_start():
     global m04, m53m, m54m, s_time, count, detected, mmddhhnnss, check_status
+    
+    if check_status == 1:
+        logger.info("검사 시스템 시작됨")
         
     if(check_status%20==0):
         start_btn_check()
@@ -602,6 +620,7 @@ def check_start():
 
     # 방금 Start 버튼이 눌렸으면
     elif not((m53m == m53) & (m54m == m54)):
+        logger.info("물리적 Start 버튼 눌림 - 검사 시작")
         count = 0
         # 면적 DB 보관할 폴더 있는지 확인 후 없으면 생성
         path='C:/areaDB/'+date.get_date_in_yyyymm()+'/'+date.get_date_in_yyyymmdd()+'/'
@@ -631,15 +650,17 @@ def check_start():
         # mmddhhnnss = f"{yyyy}{mm}{dd}{hh}{nn}{ss}"
 
         mmddhhnnss = plc_starttime(client)
+        logger.info(f"제품 시작 시간: {mmddhhnnss}")
 
 
         # print("   ", i," :10프레임 실행: 밝기 측정, Exposure Time 변경")
+        logger.info("카메라 노출 시간 자동 조정 중...")
         exposure_change()
         # print("   ", i," :10프레임 실행: Segmentation area 측정, 기준 넓이로 지정")
         # mask_area_base_set()
         
         #SQL insert (시작시간)
-        
+        logger.info("시작 시간 데이터베이스 기록 중...")
         start_sql_thread = threading.Thread(target=write_start_sql, args=(mmddhhnnss, cable_area_base))
         start_sql_thread.start()
         # start_sql_thread.join()
@@ -966,7 +987,7 @@ def detect_camera():
 
                 # Run YOLOv8 inference on the frame
                 # results1 = model(img1)
-                result = model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence, half=True)
+                result = model.predict(merge_img, save=False, imgsz=imgsize, conf=confidence, half=True, verbose=False)
 
                 # Visualize the results on the frame
                 annotated_img = cv2.resize(result[0].plot(), (530,530))
@@ -1005,6 +1026,7 @@ def detect_camera():
                             # time2 = int(date.get_time_millisec())
 
                             count = count + 1
+                            logger.info(f"불량 검출! 신뢰도: {conf_max:.3f} (기준: {critical})")
 
                             #########################
                             #### PLC connect 시작 ####
@@ -1138,6 +1160,7 @@ check_status = 1
 
 def start_cam():
     global cam_on, check_status
+    logger.info("start_cam 함수 호출됨")
     start_btn_check()
     
     if cam_on == False :
@@ -1146,9 +1169,14 @@ def start_cam():
         # open_camera()
         if m53 + m54 == 1 :
             show_inference_status("검사 중")
+            logger.info("검사 모드로 변경")
         else :
             show_inference_status("준비 중")
+            logger.info("준비 모드로 변경")
         check_start()
+        logger.info("카메라 시작 완료")
+    else:
+        logger.info("카메라가 이미 실행 중입니다")
 
 def stop_cam():
     global cam_on
@@ -1203,7 +1231,10 @@ btn_open.place(x=120, y=505)
 
 
 # Auto start
+logger.info("프로그램이 시작되었습니다.")
+logger.info("카메라 초기화 중...")
 start_cam()
+logger.info("카메라 초기화 완료. GUI 시작.")
 # Create an infinite loop for displaying app on screen 
 win.mainloop() 
 
@@ -1211,8 +1242,10 @@ win.mainloop()
 try: 
     # cap.release()
     # cv2.destroyAllWindows()
+    logger.info("프로그램이 종료되었습니다.")
     print("Camera is released")
 except Exception as e:
+    logger.error(f"카메라 해제 중 오류: {e}")
     print(f"Error opening webcam: {e}")
     traceback.print_exc(file=sys.stdout)
 finally:
