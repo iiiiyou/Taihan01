@@ -820,6 +820,7 @@ def show_camera():
     grabResults = []
     images, results, annotated_imgs = [], [], []
     cap_imgs, photos = [], []
+    # global total_attempts
 
     if cam_on:
         try:
@@ -852,13 +853,13 @@ def show_camera():
                        
             # 사진 3장 합치기
             # 입력 검증 및 카메라 상태 로그
-            total_attempts += 1
+            # total_attempts += 1
             successful_cameras = len(images)
             
             if not images or len(images) == 0:
                 logger.warning("Cannot get images from all cameras. Creating black image.")
-                if total_attempts % 100 == 0:  # 100회마다 상태 출력
-                    logger.info(f"Camera status - Success: {camera_success_count}, Fail: {camera_fail_count}")
+                # if total_attempts % 100 == 0:  # 100회마다 상태 출력
+                #     logger.info(f"Camera status - Success: {camera_success_count}, Fail: {camera_fail_count}")
                 merge_img = np.zeros((640, 640, 3), dtype=np.uint8)
                 channel = 3
             else:
