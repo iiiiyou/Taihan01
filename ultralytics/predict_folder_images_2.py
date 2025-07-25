@@ -3,7 +3,7 @@ import os
 from PIL import Image, ImageDraw, ImageFont # ImageFont 를 import 합니다.
 
 # --- 모델 로드 ---
-model = YOLO('C:/source/models/taihanfiber_18-1_20250725_yolo11s-seg_best.pt')
+model = YOLO('C:/source/models/taihanfiber_19-1_20250725_yolo11s-seg_best.pt')
 
 # --- 이미지 파일 경로 리스트 ---
 image_folder = 'C:/image/20250721/Original'  # 이미지 폴더 경로 지정
@@ -25,7 +25,7 @@ except IOError:
     font = ImageFont.load_default()
 
 # --- 결과 처리 ---
-output_folder = 'C:/temp/20250721_original/output1'
+output_folder = 'C:/temp/20250721_original/output2'
 os.makedirs(output_folder, exist_ok=True) # 결과 저장 폴더 생성 (없으면)
 
 
