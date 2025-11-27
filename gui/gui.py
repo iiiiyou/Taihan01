@@ -58,7 +58,7 @@ model = YOLO('C:/source/models/taihanfiber_19-1_20250725_yolo11s-seg_best.pt', v
 imgsize = 640
 confidence = 0.5
 reset_confidence = confidence
-critical = 0.7
+critical = 0.73
 # 케이블 면적 기준 값
 cable_area_base = 0
 
