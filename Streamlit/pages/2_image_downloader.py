@@ -33,28 +33,12 @@ if selected_date and len(selected_date) == 8 and selected_date.isdigit():
     else:
         # HTML generation
         html_filename = f"{selected_date}.htm"
-        image_folder = f"C:/image/{selected_date}"
+        image_base_folder = "C:/image"
         zip_filename = f"{selected_date}_report.zip"
 
         html_content = "<html><head><title>검출보고서</title></head><body>"
         html_content += f"<h2>검출 일자: {selected_date}</h2><table border='1' cellspacing='0' cellpadding='5'>"
         html_content += "<tr>" + "".join([f"<th>{col}</th>" for col in df.columns]) + "</tr>"
-
-        # for _, row in df.iterrows():
-        #     html_content += "<tr>"
-        #     for col in df.columns:
-        #         if col == "image":
-        #             image_path = row[col]
-        #             image_name = os.path.basename(image_path)
-        #             html_content += (
-        #                 f"<td>"
-        #                 f"<a href='{image_name}' target='_blank'>"
-        #                 f"<img src='{image_name}' alt='thumbnail' width='100' height='100'>"
-        #                 f"</a></td>"
-        #             )
-        #         else:
-        #             html_content += f"<td>{row[col]}</td>"
-        #     html_content += "</tr>"
             
         for _, row in df.iterrows():
             html_content += "<tr>"
@@ -88,30 +72,20 @@ if selected_date and len(selected_date) == 8 and selected_date.isdigit():
         with ZipFile(zip_filename, 'w') as zipf:
             zipf.write(html_filename)
 
-            # # Add all images from C:/image/YYYYMMDD
-            # for root, _, files in os.walk(image_folder):
-            #     for file in files:
-            #         file_path = os.path.join(root, file)
-            #         arcname = os.path.relpath(file_path, image_folder)
-            #         zipf.write(file_path, arcname=os.path.join(selected_date, arcname))
-
-            # box 폴더의 이미지들 추가
-            box_folder = os.path.join(image_folder, 'box')
-            if os.path.exists(box_folder):
-                for file in os.listdir(box_folder):
-                    file_path = os.path.join(box_folder, file)
-                    if os.path.isfile(file_path):
-                        # ZIP 내부에 box/파일명 형태로 저장
-                        zipf.write(file_path, arcname=f'box/{file}')
-            
-            # Original 폴더의 이미지들 추가
-            original_folder = os.path.join(image_folder, 'Original')
-            if os.path.exists(original_folder):
-                for file in os.listdir(original_folder):
-                    file_path = os.path.join(original_folder, file)
-                    if os.path.isfile(file_path):
-                        # ZIP 내부에 Original/파일명 형태로 저장
-                        zipf.write(file_path, arcname=f'Original/{file}')
+            # C:/image 폴더에서 selected_date로 시작하는 모든 폴더 찾기
+            if os.path.exists(image_base_folder):
+                for folder_name in os.listdir(image_base_folder):
+                    folder_path = os.path.join(image_base_folder, folder_name)
+                    
+                    # 폴더이면서 selected_date로 시작하는 경우
+                    if os.path.isdir(folder_path) and folder_name.startswith(selected_date):
+                        # 해당 폴더 안의 모든 파일과 하위 폴더를 ZIP에 추가
+                        for root, dirs, files in os.walk(folder_path):
+                            for file in files:
+                                file_path = os.path.join(root, file)
+                                # C:/image 기준 상대 경로 계산
+                                arcname = os.path.relpath(file_path, image_base_folder)
+                                zipf.write(file_path, arcname=arcname)
 
         # 임시 파일 정리   
         os.remove(html_filename)
