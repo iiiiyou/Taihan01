@@ -1084,6 +1084,21 @@ def detect_camera():
                             #### PLC connect 끝 ####
                             #########################
 
+                            # 날짜 포맷 (YYYY_MM_DD)
+                            year = detected_date[0:4]
+                            month = detected_date[4:6]
+                            day = detected_date[6:8]
+
+                            # 제조번호 정리
+                            serial_clean = s_n.strip()
+
+                            # Confidence 퍼센트로 변환
+                            conf_percent = int(conf_max.item() * 100)
+
+                            # 새로운 파일명: 2025_01_27_ABC1234567_152m_86.jpg
+                            filename = f"{year}_{month}_{day}_{serial_clean}_{d_meter}m_{conf_percent}.jpg"
+
+
 
                             #########################
                             #### PLC 변수 수동 설정 시작 ####
@@ -1100,7 +1115,7 @@ def detect_camera():
                             type = "defect"
 
                             # 이미지 저장 위치
-                            image = "C:/image/"+detected_date+"/box/"+str(detected_time)+".jpg"
+                            image = "C:/image/"+detected_date+"/box/"+str(filename)+".jpg"
                             area = 0
 
                             #########################
@@ -1115,11 +1130,11 @@ def detect_camera():
                             # time.sleep(1)
 
                             # image save - thread - start #
-                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + filename + '.jpg', result[0].plot()))
                             save_thread1.start()
                             # save_thread1.join()
                             
-                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + filename + '.jpg', merge_img))
                             save_thread2.start()
                             # save_thread2.join()
                             # image save - thread - end #
@@ -1131,13 +1146,38 @@ def detect_camera():
 
                             # camera_frame_log(detected_time, "c", round(conf_max.item(), 3))
                         else:
+
+                            # PLC 정보 가져오기
+                            s_n = plc_getserial(client)
+                            result_err_cnt= client.read_holding_registers(0x0008)
+                            err_cnt_array = int(result_err_cnt.registers[0])
+                            
+                            client.write_coils(0x0020,1)
+                            client.write_coils(0x0020,0)
+                            m_m = err_cnt_array + 1000
+                            d1000_m  = client.read_holding_registers(m_m)
+                            d_meter = d1000_m.registers[0]
+                            
+                            # 날짜 포맷
+                            year = detected_date[0:4]
+                            month = detected_date[4:6]
+                            day = detected_date[6:8]
+                            
+                            serial_clean = s_n.strip()
+                            
+                            # Confidence 퍼센트로 변환
+                            conf_percent = int(conf_max.item() * 100)
+                            
+                            # under60 파일명
+                            filename = f"{year}_{month}_{day}_{serial_clean}_{d_meter}m_{conf_percent}.jpg"
+
                             
                             # image save - thread - start #
-                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/box/' + detected_time + '.jpg', result[0].plot()))
+                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/box/' + filename + '.jpg', result[0].plot()))
                             save_thread3.start()
                             # save_thread3.join()
                             
-                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/Original/' + detected_time + '.jpg', merge_img))
+                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/Original/' + filename + '.jpg', merge_img))
                             save_thread4.start()
                             # save_thread4.join()
                             # image save - thread - end #
