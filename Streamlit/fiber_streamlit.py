@@ -6,6 +6,8 @@ from io import BytesIO
 from datetime import date, datetime, timedelta
 import os
 import base64
+import numpy as np
+import cv2
 from st_aggrid import AgGrid, GridOptionsBuilder, GridUpdateMode
 
 # 페이지 설정
@@ -59,17 +61,200 @@ def to_excel(df):
     processed_data = output.getvalue()
     return processed_data
 
-def image_to_base64(image_path):
-    """이미지를 base64 문자열로 변환"""
-    with open(image_path, "rb") as img_file:
-        return base64.b64encode(img_file.read()).decode('utf-8')
+def brighten_image(image, brightness):
+    """
+    이미지의 밝기를 조정합니다.
+    
+    Parameters:
+    -----------
+    image : numpy.ndarray
+        입력 이미지 (BGR 형식)
+    brightness : int
+        밝기 조정값 (-100 ~ 100)
+        - 양수: 밝게
+        - 음수: 어둡게
+        - 0: 원본 유지
+    
+    Returns:
+    --------
+    numpy.ndarray
+        밝기가 조정된 이미지
+    """
+    if image is None:
+        return None
+    
+    # brightness가 0이면 원본 그대로 반환
+    if brightness == 0:
+        return image.copy()
+    
+    # 이미지를 0-1 범위로 정규화
+    img_float = image.astype(np.float32) / 255.0
+    
+    # 밝기 조정: -100~100 -> 0.2~3.0 (곱셈 방식)
+    if brightness > 0:
+        brightness_factor = 1.0 + (brightness / 100.0) * 2.0  # 0~100 -> 1.0~3.0
+    else:
+        brightness_factor = 1.0 + (brightness / 100.0) * 0.8  # -100~0 -> 0.2~1.0
+    
+    img_float = img_float * brightness_factor
+    
+    # 0-1 범위로 클리핑하고 0-255로 변환
+    img_float = np.clip(img_float, 0, 1)
+    return (img_float * 255).astype(np.uint8)
+
+def image_to_base64(image_path, brightness=0):
+    """이미지를 base64 문자열로 변환 (밝기 조절 포함)"""
+    # OpenCV로 이미지 읽기
+    img = cv2.imread(image_path)
+    
+    if img is None:
+        return None
+    
+    # 밝기 조절
+    if brightness != 0:
+        img = brighten_image(img, brightness)
+    
+    # 이미지를 base64로 인코딩
+    _, buffer = cv2.imencode('.jpg', img)
+    return base64.b64encode(buffer).decode('utf-8')
+
+def display_selected_images(selected_data, start_date_str):
+    """
+    선택된 항목의 이미지를 표시하는 함수
+    
+    Args:
+        selected_data: 선택된 행의 데이터 (pandas Series)
+        start_date_str: 시작 날짜 문자열 (YYYYMMDD 형식)
+    """
+    # 유형에 따라 폴더 경로 설정
+    if selected_data["유형"] == "defect":
+        image_folder = os.path.join(r"C:\image", start_date_str, "box")
+        origin_folder = os.path.join(r"C:\image", start_date_str, "original")
+    elif selected_data["유형"] == "area":
+        image_folder = os.path.join(r"C:\image", start_date_str, "area_box")
+        origin_folder = os.path.join(r"C:\image", start_date_str, "area_original")
+    else:
+        image_folder = None
+        origin_folder = None
+
+    # 이미지 경로 설정
+    st.session_state['image_url'] = os.path.join(image_folder, selected_data["이미지"]) if image_folder else None
+    
+    # st.session_state['image_url'] 값이 유효한지 확인
+    if st.session_state['image_url']:
+        # 경로에서 날짜 정보 추출하기 위해 슬래시 `/`로 분리
+        split_image_url = st.session_state['image_url'].split("/")
+        origin_folder = st.session_state['image_url'].replace("box", "original")
+
+        # 분리한 경로에 충분한 요소가 있는지 확인
+        if len(split_image_url) >= 4:  # 경로에서 네 번째 요소가 날짜라고 가정
+            image_date_str = split_image_url[2]  # 세 번째 요소에 날짜
+            image_box_folder = split_image_url[3]  # 세 번째 요소에 폴더값
+            
+            try:
+                image_date = datetime.strptime(image_date_str, "%Y%m%d")
+                
+                # 먼저 동일 날짜의 original 폴더에서 이미지 찾기
+                original_image_url = selected_data['이미지'].replace('box', 'Original')
+
+                # 동일 날짜의 original 폴더에 이미지가 있는지 확인
+                image_base_path = os.path.join(origin_folder, f"{original_image_url.split('.')[0]}")
+
+                if os.path.exists(f"{image_base_path.split('.')[0]}.jpg"):
+                    # 이미지가 있는 경우 해당 경로 저장
+                    st.session_state['origin_image_url'] = original_image_url
+                else:
+                    # 동일 날짜에 이미지가 없는 경우 하루 전 날짜로 변경
+                    previous_date = image_date - timedelta(days=1)
+                    previous_date_str = previous_date.strftime("%Y%m%d")
+
+                    # 하루 전 날짜의 original 폴더 경로 생성
+                    previous_image_base_path = os.path.join(origin_folder, selected_data['이미지'].replace('box', 'Original').replace(image_date_str, previous_date_str))
+                    
+                    # 하루 전 날짜의 original 폴더에 이미지가 있는지 확인
+                    if os.path.exists(f"{previous_image_base_path.split('.')[0]}.jpg"):
+                        # 하루 전 날짜 이미지가 있는 경우 해당 경로 저장
+                        st.session_state['origin_image_url'] = previous_image_base_path
+                    else:
+                        # 이미지가 없는 경우 None 설정
+                        st.session_state['origin_image_url'] = None
+                                                                           
+                # 먼저 동일 날짜의 original 폴더에서 이미지 찾기
+                if st.session_state['origin_image_url']:
+                    original_image_urls = [
+                        os.path.join(origin_folder, f"{st.session_state['origin_image_url'].split('.')[0]}.jpg")
+                    ]
+                else:
+                    st.error("원본 이미지 파일이 존재하지 않습니다")
+                    
+            except ValueError as e:
+                st.error(f"날짜 변환 오류: {e}")
+        else:
+            st.error("경로에 날짜 정보를 찾을 수 없습니다.")
+
+    st.session_state['image_pk'] = f'{selected_data["불량검출시간"]}'
+
+    # 이미지 크기 조정 및 표시
+    if st.session_state['image_url']:
+        # 밝기 조절 슬라이더 추가
+        brightness = st.slider(
+            "이미지 밝기 조절",
+            min_value=-100,
+            max_value=100,
+            value=0,
+            step=5,
+            help="밝기를 조절합니다. -100(어둡게) ~ 100(밝게)"
+        )
+        
+        col1, col2 = st.columns(2)  # 2개의 컬럼 생성
+
+        # 첫 번째 컬럼: box 폴더의 이미지 1장 표시
+        with col1:
+            if os.path.exists(st.session_state['image_url']):
+                img_base64 = image_to_base64(st.session_state['image_url'], brightness)
+                if img_base64:
+                    st.markdown(
+                        f'<div class="image-container">'
+                        f'<img src="data:image/jpeg;base64,{img_base64}" class="responsive-image" />'
+                        f'<div class="caption">box</div>'
+                        f'</div>',
+                        unsafe_allow_html=True
+                    )
+                else:
+                    st.error(f"이미지를 불러올 수 없습니다: {st.session_state['image_url']}")
+            else:
+                st.error(f"이미지 파일이 존재하지 않습니다: {st.session_state['image_url']}")
+
+        # 두 번째 컬럼: Original 폴더의 이미지 1장 표시
+        with col2:
+            if st.session_state['origin_image_url']:
+                if original_image_urls[0] and os.path.exists(original_image_urls[0]):
+                    origin_img_base64 = image_to_base64(original_image_urls[0], brightness)
+                    if origin_img_base64:
+                        st.markdown(
+                            f'<div class="image-container">'
+                            f'<img src="data:image/jpeg;base64,{origin_img_base64}" class="responsive-image" />'
+                            f'<div class="caption">camera-0</div>'
+                            f'</div>',
+                            unsafe_allow_html=True
+                        )
+                    else:
+                        st.error(f"원본 이미지를 불러올 수 없습니다: {original_image_urls[0]}")
+                else:
+                    st.error(f"원본 이미지 파일이 존재하지 않습니다: {original_image_urls[0]}")
+            else:
+                st.error("원본 이미지 파일이 존재하지 않습니다.")
 
 # CSS 스타일 정의
 st.markdown("""
     <style>
     /* 타이틀 위의 공백 제거 */
     .main .block-container {
-        padding-top: 1.5rem;  /* 여백을 줄이려면 값을 줄임 */
+        padding-top: 0rem;  /* 여백을 줄이려면 값을 줄임 */
+    }
+    .block-container {
+        padding-top: 2rem;
+        margin-top: 0rem;
     }
     .css-18e3th9 {
         margin-top: -100px;  /* 필요한 만큼 값 조정 */
@@ -78,6 +263,7 @@ st.markdown("""
         font-size: 30px;  /* 원하는 크기로 조정 */
         font-weight: bold;
         margin-top: 0;
+        padding-top: 0;
         text-align: left;
     }
     .custom-label {
@@ -252,125 +438,14 @@ grid_response = AgGrid(
 selected_row = grid_response['selected_rows'] if grid_response['selected_rows'] is not None else []
 
 # 하단에 이미지를 표시
-# 하단에 이미지를 표시
-# 하단에 이미지를 표시
 with st.container():
     if len(selected_row) > 0:  # 선택된 행이 있는 경우에만 처리
         selected_data = pd.DataFrame(selected_row).iloc[0]  # 첫 번째 선택된 행 데이터
-
-        # 유형에 따라 폴더 경로 설정
-        if selected_data["유형"] == "defect":
-            image_folder = os.path.join(r"C:\image", start_date_str, "box")
-            origin_folder = os.path.join(r"C:\image", start_date_str, "original")
-        elif selected_data["유형"] == "area":
-            image_folder = os.path.join(r"C:\image", start_date_str, "area_box")
-            origin_folder = os.path.join(r"C:\image", start_date_str, "area_original")
-        else:
-            image_folder = None
-            origin_folder = None
-
-        # 이미지 경로 설정
-        st.session_state['image_url'] = os.path.join(image_folder, selected_data["이미지"]) if image_folder else None
         
-        # st.session_state['image_url'] 값이 유효한지 확인
-        if st.session_state['image_url']:
-            # 경로에서 날짜 정보 추출하기 위해 슬래시 `/`로 분리
-            split_image_url = st.session_state['image_url'].split("/")
-            origin_folder = st.session_state['image_url'].replace("box", "original")
-
-            # 분리한 경로에 충분한 요소가 있는지 확인
-            if len(split_image_url) >= 4:  # 경로에서 네 번째 요소가 날짜라고 가정
-                image_date_str = split_image_url[2]  # 세 번째 요소에 날짜
-                image_box_folder = split_image_url[3]  # 세 번째 요소에 폴더값
-                
-                try:
-                    image_date = datetime.strptime(image_date_str, "%Y%m%d")
-                    #modified_image = selected_data['이미지'].replace('box', 'Original')
- 
-                    # 먼저 동일 날짜의 original 폴더에서 이미지 찾기
-                    original_image_url = selected_data['이미지'].replace('box', 'Original')
-
-                    # 동일 날짜의 original 폴더에 이미지가 있는지 확인
-                    image_base_path = os.path.join(origin_folder, f"{original_image_url.split('.')[0]}")  # 기본 경로 설정
-
-                    if (os.path.exists(f"{image_base_path.split('.')[0]}.jpg") ):
-                        #st.write(f"Process: 1") 
-                        # 이미지가 있는 경우 해당 경로 저장
-                        st.session_state['origin_image_url'] = original_image_url
-                    else:
-                        # 동일 날짜에 이미지가 없는 경우 하루 전 날짜로 변경
-                        previous_date = image_date - timedelta(days=1)
-                        previous_date_str = previous_date.strftime("%Y%m%d")
-
-                        # 하루 전 날짜의 original 폴더 경로 생성
-                        previous_image_base_path = os.path.join(origin_folder, selected_data['이미지'].replace('box', 'Original').replace(image_date_str, previous_date_str))
-                        
-                        #st.write(f"Process: 2")   
-                        # 하루 전 날짜의 original 폴더에 이미지가 있는지 확인
-                        if (os.path.exists(f"{previous_image_base_path.split('.')[0]}.jpg")):
-                            #st.write(f"Process: 3") 
-                            
-                            # 하루 전 날짜 이미지가 있는 경우 해당 경로 저장
-                            st.session_state['origin_image_url'] = previous_image_base_path
-                        else:
-                            # 이미지가 없는 경우 None 설정
-                            st.session_state['origin_image_url'] = None
-                            #st.write(f"Process: 4")  
- 
-                    #st.write(f"original_image_url: {original_image_url}")
-                    #st.write(f"original_image_url: {st.session_state['origin_image_url'] }")
-                                                                               
-                    # 먼저 동일 날짜의 original 폴더에서 이미지 찾기
-                    if st.session_state['origin_image_url']:
-                        original_image_urls = [
-                        os.path.join(origin_folder, f"{st.session_state['origin_image_url'].split('.')[0]}.jpg")
-                    ]
-                    else:
-                        st.error("원본 이미지 파일이 존재하지 않습니다")
-                        
-                except ValueError as e:
-                    st.error(f"날짜 변환 오류: {e}")
-            else:
-                st.error("경로에 날짜 정보를 찾을 수 없습니다.")
-
-        st.session_state['image_pk'] = f'{selected_data["불량검출시간"]}'
-
-        # 이미지 크기 조정 및 표시
-        if st.session_state['image_url']:
-            col1, col2 = st.columns(2)  # 2개의 컬럼 생성
-
-            # 첫 번째 컬럼: box 폴더의 이미지 1장 표시
-            with col1:
-                if os.path.exists(st.session_state['image_url']):
-                    img_base64 = image_to_base64(st.session_state['image_url'])
-                    st.markdown(
-                        f'<div class="image-container">'
-                        f'<img src="data:image/png;base64,{img_base64}" class="responsive-image" />'
-                        f'<div class="caption">box</div>'
-                        f'</div>',
-                        unsafe_allow_html=True
-                    )
-                else:
-                    st.error(f"이미지 파일이 존재하지 않습니다: {st.session_state['image_url']}")
-
-            # 두 번째 컬럼: Original 폴더의 이미지 1장 표시
-            with col2:
-                if st.session_state['origin_image_url']:
-                    if original_image_urls[0] and os.path.exists(original_image_urls[0]):  # 첫 번째 Original 이미지 사용
-                        origin_img_base64 = image_to_base64(original_image_urls[0])
-                        st.markdown(
-                            f'<div class="image-container">'
-                            f'<img src="data:image/png;base64,{origin_img_base64}" class="responsive-image" />'
-                            f'<div class="caption">camera-0</div>'
-                            f'</div>',
-                            unsafe_allow_html=True
-                        )
-                    else:
-                        st.error(f"원본 이미지 파일이 존재하지 않습니다: {original_image_urls[0]}")
-                else:
-                    st.error("원본 이미지 파일이 존재하지 않습니다.")
+        # 이미지 표시 함수 호출
+        display_selected_images(selected_data, start_date_str)
     else:
-        # 이미지가 선택되지 않은 경우 아무것도 표시하지 않음
+        # 이미지가 선택되지 않은 경우 세션 상태 초기화
         st.session_state['image_url'] = None
         st.session_state['origin_image_urls'] = []
         st.session_state['image_pk'] = None
