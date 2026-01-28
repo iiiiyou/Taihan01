@@ -201,7 +201,7 @@ def display_selected_images(selected_data, start_date_str):
             "이미지 밝기 조절",
             min_value=-100,
             max_value=100,
-            value=0,
+            value=100,
             step=5,
             help="밝기를 조절합니다. -100(어둡게) ~ 100(밝게)"
         )
