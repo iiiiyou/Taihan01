@@ -1090,13 +1090,15 @@ def detect_camera():
                             day = detected_date[6:8]
 
                             # 제조번호 정리
-                            serial_clean = s_n.strip()
+                            serial_clean = s_n.replace('\x00', '')  # null 문자 제거
+                            serial_clean = serial_clean.strip()      # 앞뒤 공백 제거
+                            serial_clean = serial_clean.replace(' ', '')  # 모든 공백 제거
 
                             # Confidence 퍼센트로 변환
                             conf_percent = int(conf_max.item() * 100)
 
                             # 새로운 파일명: 2025_01_27_ABC1234567_152m_86.jpg
-                            filename = f"{year}_{month}_{day}_{serial_clean}_{d_meter}m_{conf_percent}.jpg"
+                            filename = f"{year}_{month}_{day}_{serial_clean}_{d_meter}_{conf_percent}"
 
 
 
@@ -1130,11 +1132,11 @@ def detect_camera():
                             # time.sleep(1)
 
                             # image save - thread - start #
-                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + filename + '.jpg', result[0].plot()))
+                            save_thread1 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/box/' + str(filename) + '.jpg', result[0].plot()))
                             save_thread1.start()
                             # save_thread1.join()
                             
-                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + filename + '.jpg', merge_img))
+                            save_thread2 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '/Original/' + str(filename) + '.jpg', merge_img))
                             save_thread2.start()
                             # save_thread2.join()
                             # image save - thread - end #
@@ -1163,21 +1165,23 @@ def detect_camera():
                             month = detected_date[4:6]
                             day = detected_date[6:8]
                             
-                            serial_clean = s_n.strip()
+                            serial_clean = s_n.replace('\x00', '')  # null 문자 제거
+                            serial_clean = serial_clean.strip()      # 앞뒤 공백 제거
+                            serial_clean = serial_clean.replace(' ', '')  # 모든 공백 제거
                             
                             # Confidence 퍼센트로 변환
                             conf_percent = int(conf_max.item() * 100)
                             
                             # under60 파일명
-                            filename = f"{year}_{month}_{day}_{serial_clean}_{d_meter}m_{conf_percent}.jpg"
+                            filename = f"{year}_{month}_{day}_{serial_clean}_{d_meter}_{conf_percent}"
 
                             
                             # image save - thread - start #
-                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/box/' + filename + '.jpg', result[0].plot()))
+                            save_thread3 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/box/' + str(filename) + '.jpg', result[0].plot()))
                             save_thread3.start()
                             # save_thread3.join()
                             
-                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/Original/' + filename + '.jpg', merge_img))
+                            save_thread4 = threading.Thread(target=save_image, args=('C:/image/' + detected_date + '_under60/Original/' + str(filename) + '.jpg', merge_img))
                             save_thread4.start()
                             # save_thread4.join()
                             # image save - thread - end #
