@@ -1154,8 +1154,8 @@ def detect_camera():
                             result_err_cnt= client.read_holding_registers(0x0008)
                             err_cnt_array = int(result_err_cnt.registers[0])
                             
-                            client.write_coils(0x0020,1)
-                            client.write_coils(0x0020,0)
+                            # client.write_coils(0x0020,1)
+                            # client.write_coils(0x0020,0)
                             m_m = err_cnt_array + 1000
                             d1000_m  = client.read_holding_registers(m_m)
                             d_meter = d1000_m.registers[0]
